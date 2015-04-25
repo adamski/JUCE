@@ -68,7 +68,7 @@ public:
 
         if (isEnabled())
         {
-            if (owner.selectOnMouseDown && ! selected)
+            if (owner.selectOnMouseDown && ! selected && ! owner.getViewport()->getShouldScrollOnDrag())
             {
                 owner.selectRowsBasedOnModifierKeys (row, e.mods, false);
 
@@ -84,7 +84,7 @@ public:
 
     void mouseUp (const MouseEvent& e) override
     {
-        if (isEnabled() && selectRowOnMouseUp && ! isDragging)
+        if (isEnabled() && selectRowOnMouseUp && ! isDragging && ! owner.getViewport()->isScrollingOnDrag())
         {
             owner.selectRowsBasedOnModifierKeys (row, e.mods, true);
 
@@ -102,6 +102,9 @@ public:
 
     void mouseDrag (const MouseEvent& e) override
     {
+        if (owner.getViewport()->getShouldScrollOnDrag())
+            return;
+        
         if (ListBoxModel* m = owner.getModel())
         {
             if (isEnabled() && ! (e.mouseWasClicked() || isDragging))

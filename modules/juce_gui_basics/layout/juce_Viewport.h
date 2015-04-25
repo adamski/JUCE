@@ -240,6 +240,17 @@ public:
     */
     ScrollBar* getHorizontalScrollBar() noexcept                { return &horizontalScrollBar; }
 
+    /** Enables or not the possibility to scroll in the viewport using mouseDrag in the viewport
+    */
+    void setShouldScrollOnDrag(bool should) { shouldScrollOnDrag = should;}
+    
+    /** True if mouseDrag is scrolling the viewport
+    */
+    bool getShouldScrollOnDrag() const { return shouldScrollOnDrag; }
+
+    /** True if the viewport is currenly beeing scrolled via a mouseDrag, mouse is down and dragging in the viewport.
+    */
+    bool isScrollingOnDrag();
 
     //==============================================================================
     /** @internal */
@@ -275,6 +286,12 @@ private:
 
     void updateVisibleArea();
     void deleteContentComp();
+
+    bool shouldScrollOnDrag;
+
+    class ScrollOnDragViewPort;
+    friend class ScrollOnDragViewPort;
+    ScopedPointer<ScrollOnDragViewPort> scrollOnDrag;
 
    #if JUCE_CATCH_DEPRECATED_CODE_MISUSE
     // If you get an error here, it's because this method's parameters have changed! See the new definition above..

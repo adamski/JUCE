@@ -22,6 +22,100 @@
   ==============================================================================
 */
 
+class Viewport::ScrollOnDragViewPort : public MouseListener, public Timer
+{
+public:
+  ScrollOnDragViewPort(Viewport &o) : owner(o),
+                                      numberFingerDown(0),
+                                      isDragging(false)
+  {
+    o.addMouseListener(this, true);
+  }
+
+  //==============================================================================
+  void mouseUp(const MouseEvent &e) override
+  {
+    if (numberFingerDown)
+      --numberFingerDown;
+
+    if (isDragging)
+    {
+      if (abs(lastScrollSpeed.x) > 1 || abs(lastScrollSpeed.y) > 1) //Autodrag Threshold
+       startTimer(10);
+    }
+    isDragging = false;
+  }
+  
+  //==============================================================================
+  void mouseDrag(const MouseEvent &e) override
+  {
+    if (!owner.shouldScrollOnDrag || numberFingerDown > 1)
+      return;
+    if (isDragging == false) //init drag
+    {
+      draggingVelocity = Point<double>(0.5, 0.5);
+      startScrollPx.x = owner.getViewPosition().x;
+      startScrollPx.y = owner.getViewPosition().y;
+      lastScrollingDistance = Point<int>(0, 0);
+      lastScrollSpeed = Point<int>(0, 0);
+    }
+    Point<int> distanceInPx = e.getOffsetFromDragStart();
+
+    lastScrollSpeed.y = e.getDistanceFromDragStartY() - lastScrollingDistance.y;
+    lastScrollSpeed.x = e.getDistanceFromDragStartX() - lastScrollingDistance.x;
+
+    if (!isDragging && abs(distanceInPx.x) < 10 && abs(distanceInPx.y) < 10)
+      return;
+    isDragging = true;
+
+    Point<int> moveInPx;
+    moveInPx.x = (startScrollPx.x + (-distanceInPx.x));
+    moveInPx.y = (startScrollPx.y + (-distanceInPx.y));
+
+    owner.setViewPosition(moveInPx.x, moveInPx.y);
+    lastScrollingDistance = distanceInPx;
+  }
+  
+  //==============================================================================
+  void mouseDown(const MouseEvent &e) override
+  {
+    stopTimer();
+    ++numberFingerDown;
+  }
+
+  //==============================================================================
+  void timerCallback() override
+  {
+    Point<int> stepSize;
+    
+    stepSize.x = (int)(lastScrollingDistance.x + lastScrollSpeed.x * draggingVelocity.x);
+    stepSize.y = (int)(lastScrollingDistance.y + lastScrollSpeed.y * draggingVelocity.y);
+
+    if (lastScrollingDistance.x == stepSize.x && lastScrollingDistance.y == stepSize.y)
+      return stopTimer();
+
+    Point<int>    moveInPx;
+    moveInPx.x = (startScrollPx.x + (-stepSize.x));
+    moveInPx.y = (startScrollPx.y + (-stepSize.y));
+
+    owner.setViewPosition(moveInPx.x, moveInPx.y);
+    lastScrollingDistance = stepSize;
+    draggingVelocity *= 0.9; //Reduce velocity
+  }
+
+private:
+  friend class Viewport;
+  Viewport& owner;
+
+  Point<double> draggingVelocity;
+  Point<int> lastScrollingDistance, lastScrollSpeed, startScrollPx;
+  int numberFingerDown;
+  bool isDragging;
+};
+
+
+//==============================================================================
+
 Viewport::Viewport (const String& name)
   : Component (name),
     scrollBarThickness (0),
@@ -34,7 +128,8 @@ Viewport::Viewport (const String& name)
     allowScrollingWithoutScrollbarV (false),
     allowScrollingWithoutScrollbarH (false),
     verticalScrollBar (true),
-    horizontalScrollBar (false)
+    horizontalScrollBar (false),
+    shouldScrollOnDrag (false)
 {
     // content holder is used to clip the contents so they don't overlap the scrollbars
     addAndMakeVisible (contentHolder);
@@ -50,6 +145,8 @@ Viewport::Viewport (const String& name)
 
     setInterceptsMouseClicks (false, true);
     setWantsKeyboardFocus (true);
+
+    scrollOnDrag = new ScrollOnDragViewPort(*this);
 }
 
 Viewport::~Viewport()
@@ -62,6 +159,13 @@ void Viewport::visibleAreaChanged (const Rectangle<int>&) {}
 void Viewport::viewedComponentChanged (Component*) {}
 
 //==============================================================================
+bool Viewport::isScrollingOnDrag()
+{
+  return scrollOnDrag->isDragging;
+}
+
+//==============================================================================
+
 void Viewport::deleteContentComp()
 {
     if (contentComp != nullptr)
