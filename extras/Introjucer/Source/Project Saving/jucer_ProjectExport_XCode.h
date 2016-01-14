@@ -78,6 +78,9 @@ public:
     Value  getPreBuildScriptValue()         { return getSetting (Ids::prebuildCommand); }
     String getPreBuildScript() const        { return settings   [Ids::prebuildCommand]; }
 
+    Value  getStaticLibrarySubProjectsValue()        { return getSetting (Ids::staticLibrarySubProject); }
+    String getStaticLibrarySubProjectsString() const { return settings   [Ids::staticLibrarySubProject]; }
+
     bool usesMMFiles() const override                { return true; }
     bool isXcode() const override                    { return true; }
     bool isOSX() const override                      { return ! iOS; }
@@ -114,6 +117,10 @@ public:
 
         props.add (new TextPropertyComponent (getPostBuildScriptValue(), "Post-build shell script", 32768, true),
                    "Some shell-script that will be run after a build completes.");
+
+        props.add (new TextPropertyComponent (getStaticLibrarySubProjectsValue(), "Static Library Sub Projects", 2048, false),
+                   "A comma-separated list of Xcode sub projects that should be added to the build. "
+                   "(This needs to be the absolute or relative path of the project including the .xcodeproj extension)");
     }
 
     bool launchProject() override
@@ -301,6 +308,7 @@ protected:
 
 private:
     mutable OwnedArray<ValueTree> pbxBuildFiles, pbxFileReferences, pbxGroups, misc, projectConfigs, targetConfigs;
+    mutable OwnedArray<ValueTree> pbxReferenceProxies, pbxContainerItemProxies;
     mutable StringArray buildPhaseIDs, resourceIDs, sourceIDs, frameworkIDs;
     mutable StringArray frameworkFileIDs, rezFileIDs, resourceFileRefs;
     mutable File infoPlistFile, menuNibFile, iconFile;
@@ -392,6 +400,8 @@ private:
 
             addGroup (createID ("__mainsourcegroup"), "Source", topLevelGroupIDs);
         }
+
+        addStaticLibrarySubProjects();
 
         for (ConstConfigIterator config (*this); config.next();)
         {
@@ -987,6 +997,27 @@ private:
         }
     }
 
+    void addStaticLibrarySubProjects() const
+    {
+        StringArray fileRefs;
+        if (! projectType.isStaticLibrary())
+        {
+            StringArray s;
+            s.addTokens (getStaticLibrarySubProjectsString(), ",;", "\"'");
+            s.trim();
+            s.removeDuplicates (true);
+            s.sort (true);
+
+            for (int i = 0; i < s.size(); ++i)
+                fileRefs.add (addStaticLibrarySubProject (s[i]));
+        }
+
+        DBG ("adding fileRefs for addStaticLibrarySubProjects:");
+        for (int i = 0; i < fileRefs.size(); ++i)
+            DBG (fileRefs[i]);
+        addGroup (createID ("Libraries"), "Libraries", fileRefs);
+    }
+
     //==============================================================================
     void writeProjectFile (OutputStream& output) const
     {
@@ -998,10 +1029,12 @@ private:
 
         Array <ValueTree*> objects;
         objects.addArray (pbxBuildFiles);
+        objects.addArray (pbxContainerItemProxies);
         objects.addArray (pbxFileReferences);
         objects.addArray (pbxGroups);
         objects.addArray (targetConfigs);
         objects.addArray (projectConfigs);
+        objects.addArray (pbxReferenceProxies);
         objects.addArray (misc);
 
         for (int i = 0; i < objects.size(); ++i)
@@ -1051,9 +1084,8 @@ private:
         return addBuildFile (path.toUnixStyle(), createFileRefID (path), addToSourceBuildPhase, inhibitWarnings);
     }
 
-    String addFileReference (String pathString) const
+    String addFileReference (String pathString, String sourceTree = "SOURCE_ROOT") const
     {
-        String sourceTree ("SOURCE_ROOT");
         RelativePath path (pathString, RelativePath::unknown);
 
         if (pathString.startsWith ("${"))
@@ -1087,6 +1119,81 @@ private:
             pbxFileReferences.addSorted (*this, v.release());
         }
 
+        return fileRefID;
+    }
+    
+    String addContainerItemProxy (String name, String fileRefID, int proxyType) const
+    {
+        DBG ("addContainerItemProxy");
+        const String containerItemProxyID (createID (name));
+        
+        ScopedPointer<ValueTree> v (new ValueTree (containerItemProxyID));
+        v->setProperty ("isa", "PBXContainerItemProxy", nullptr);
+        v->setProperty ("containerPortal", fileRefID, nullptr);
+        v->setProperty ("proxyType", proxyType, nullptr);
+        v->setProperty ("remoteGlobalIDString", createID (name + String (juce::Random::getSystemRandom().nextInt64())), nullptr); // maybe this should be completely random?
+        v->setProperty ("remoteInfo", name, nullptr);
+        
+        const int existing = pbxContainerItemProxies.indexOfSorted (*this, v);
+
+        if (existing >= 0)
+        {
+            // If this fails, there's either a string hash collision, or the same container item proxy is being added twice (incorrectly)
+            jassert (pbxContainerItemProxies.getUnchecked (existing)->isEquivalentTo (*v));
+        }
+        else
+        {
+            pbxContainerItemProxies.addSorted (*this, v.release());
+        }
+
+        return containerItemProxyID;
+    }
+    
+    String addReferenceProxy (String pathString, String remoteRef, String fileType, String sourceTree) const
+    {
+        const String referenceProxyID (createID (pathString));
+        
+        ScopedPointer<ValueTree> v (new ValueTree (referenceProxyID));
+        v->setProperty ("isa", "PBXReferenceProxy", nullptr);
+        v->setProperty ("fileType", fileType, nullptr);
+        v->setProperty ("path", sanitisePath (pathString), nullptr);
+        v->setProperty ("remoteRef", remoteRef, nullptr);
+        v->setProperty ("sourceTree", sourceTree, nullptr);
+
+        const int existing = pbxReferenceProxies.indexOfSorted (*this, v);
+
+        if (existing >= 0)
+        {
+            // If this fails, there's either a string hash collision, or the same reference proxy is being added twice (incorrectly)
+            jassert (pbxReferenceProxies.getUnchecked (existing)->isEquivalentTo (*v));
+        }
+        else
+        {
+            pbxReferenceProxies.addSorted (*this, v.release());
+        }
+
+        return referenceProxyID;
+    }
+
+    String addStaticLibrarySubProject (String pathString) const
+    {
+        DBG ("addStaticLibrarySubProject");
+        DBG (pathString);
+
+        const String name (pathString.fromLastOccurrenceOf ("/", false, false).upToFirstOccurrenceOf (".xcodeproj", false, false));
+        DBG (name);
+        const String libFilename (getLibbedFilename (name)); 
+        DBG (libFilename);
+
+        const String fileRefID (addFileReference (pathString, "<group>"));
+        const String containerItemProxyID (addContainerItemProxy (name, fileRefID, 2));
+        const String referenceProxyID (addReferenceProxy (pathString, containerItemProxyID, "archive.ar", "BUILT_PRODUCTS_DIR"));
+        
+        addGroup (createID ("__" + name), "Products", StringArray (referenceProxyID));
+
+        frameworkIDs.add (addBuildFile (pathString, fileRefID, false, false));
+        frameworkFileIDs.add (fileRefID);
+        
         return fileRefID;
     }
 
