@@ -188,7 +188,7 @@ static MaxNumFileHandlesInitialiser maxNumFileHandlesInitialiser;
 
 //==============================================================================
 #ifndef JUCE_GCC
- const juce_wchar File::separator = '/';
+const juce_wchar File::separator = '/';
  const StringRef File::separatorString ("/");
 #endif
 
@@ -572,9 +572,9 @@ ssize_t FileOutputStream::writeInternal (const void* const data, const size_t nu
 void FileOutputStream::flushInternal()
 {
     if (fileHandle != 0 && fsync (getFD (fileHandle)) == -1)
-        status = getResultForErrno();
+            status = getResultForErrno();
 }
-#endif
+       #endif
 
 Result FileOutputStream::truncate()
 {
@@ -1322,10 +1322,10 @@ struct HighResolutionTimer::Pimpl
             return;
 
         if (thread == pthread_self())
-        {
+            {
             periodMs = 3600000;
             return;
-        }
+            }
 
         isRunning = false;
         destroyThread = true;
@@ -1336,7 +1336,7 @@ struct HighResolutionTimer::Pimpl
 
         pthread_join (thread, nullptr);
         thread = 0;
-    }
+        }
 
     HighResolutionTimer& owner;
     int volatile periodMs;
@@ -1384,7 +1384,7 @@ private:
                 break;
 
             if (isRunning)
-                owner.hiResTimerCallback();
+            owner.hiResTimerCallback();
 
             if (lastPeriod != periodMs)
             {
@@ -1438,7 +1438,7 @@ private:
 
             return true;
         }
-      #else
+       #else
         Clock (double millis) noexcept  : delta ((uint64) (millis * 1000000))
         {
             struct timespec t;
@@ -1470,7 +1470,7 @@ private:
                 expiryTime.tv_nsec = (long)   (time % 1000000000);
 
                 return false;
-            }
+        }
 
             return true;
         }

@@ -26,11 +26,11 @@ namespace juce
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
  METHOD (getJuceAndroidMidiInputDevices, "getJuceAndroidMidiInputDevices", "()[Ljava/lang/String;") \
  METHOD (getJuceAndroidMidiOutputDevices, "getJuceAndroidMidiOutputDevices", "()[Ljava/lang/String;") \
- METHOD (openMidiInputPortWithJuceIndex, "openMidiInputPortWithJuceIndex", "(IJ)L" JUCE_ANDROID_ACTIVITY_CLASSPATH "$JuceMidiPort;") \
- METHOD (openMidiOutputPortWithJuceIndex, "openMidiOutputPortWithJuceIndex", "(I)L" JUCE_ANDROID_ACTIVITY_CLASSPATH "$JuceMidiPort;") \
+ METHOD (openMidiInputPortWithJuceIndex, "openMidiInputPortWithJuceIndex", "(IJ)L" JUCE_ANDROID_APP_CLASSPATH "$JuceMidiPort;") \
+ METHOD (openMidiOutputPortWithJuceIndex, "openMidiOutputPortWithJuceIndex", "(I)L" JUCE_ANDROID_APP_CLASSPATH "$JuceMidiPort;") \
  METHOD (getInputPortNameForJuceIndex, "getInputPortNameForJuceIndex", "(I)Ljava/lang/String;") \
  METHOD (getOutputPortNameForJuceIndex, "getOutputPortNameForJuceIndex", "(I)Ljava/lang/String;")
- DECLARE_JNI_CLASS (MidiDeviceManager, JUCE_ANDROID_ACTIVITY_CLASSPATH "$MidiDeviceManager")
+ DECLARE_JNI_CLASS (MidiDeviceManager, JUCE_ANDROID_APP_CLASSPATH "$MidiDeviceManager")
 #undef JNI_CLASS_MEMBERS
 
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
@@ -38,7 +38,7 @@ namespace juce
  METHOD (stop, "stop", "()V") \
  METHOD (close, "close", "()V") \
  METHOD (sendMidi, "sendMidi", "([BII)V")
- DECLARE_JNI_CLASS (JuceMidiPort, JUCE_ANDROID_ACTIVITY_CLASSPATH "$JuceMidiPort")
+ DECLARE_JNI_CLASS (JuceMidiPort, JUCE_ANDROID_APP_CLASSPATH "$JuceMidiPort")
 #undef JNI_CLASS_MEMBERS
 
 
@@ -138,8 +138,8 @@ private:
     GlobalRef javaMidiDevice;
 };
 
-JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_ACTIVITY_CLASSNAME, _00024JuceMidiInputPort), handleReceive,
-                   void, (JNIEnv* env, jobject, jlong host, jbyteArray byteArray,
+JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_APP_CLASSNAME, _00024JuceMidiInputPort), handleReceive,
+                   void, (JNIEnv* env, jobject device, jlong host, jbyteArray byteArray,
                           jint offset, jint count, jlong timestamp))
 {
     // Java may create a Midi thread which JUCE doesn't know about and this callback may be
@@ -155,7 +155,7 @@ class AndroidMidiDeviceManager
 {
 public:
     AndroidMidiDeviceManager()
-        : deviceManager (android.activity.callObjectMethod (JuceAppActivity.getAndroidMidiDeviceManager))
+        : deviceManager (android.activity.callObjectMethod (JuceApp.getAndroidMidiDeviceManager))
     {
     }
 

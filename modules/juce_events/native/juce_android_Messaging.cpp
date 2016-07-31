@@ -49,7 +49,7 @@ namespace Android
             {
                 run();
                 return nullptr;
-            }
+}
 
             // invoke base class
             return AndroidInterfaceImplementer::invoke (proxy, method, args);
@@ -77,15 +77,13 @@ namespace Android
 //==============================================================================
 struct AndroidMessageQueue     : private Android::Runnable
 {
-    JUCE_DECLARE_SINGLETON_SINGLETHREADED (AndroidMessageQueue, true)
+    message->incReferenceCount();
+    android.activity.callVoidMethod (JuceApp.postMessage, (jlong) (pointer_sized_uint) message);
+    return true;
+}
 
-    AndroidMessageQueue()
-        : self (CreateJavaInterface (this, "java/lang/Runnable").get())
-    {
-    }
-
-    ~AndroidMessageQueue()
-    {
+JUCE_JNI_CALLBACK (JUCE_ANDROID_APP_CLASSNAME, deliverMessage, void, (JNIEnv* env, jobject activity, jlong value))
+{
         jassert (MessageManager::getInstance()->isThisTheMessageThread());
         clearSingletonInstance();
     }
@@ -109,9 +107,9 @@ private:
             if (message == nullptr)
                 break;
 
-            message->messageCallback();
-        }
+        message->messageCallback();
     }
+}
 
     // the this pointer to this class in Java land
     GlobalRef self;
@@ -164,8 +162,9 @@ void MessageManager::stopDispatchLoop()
             {
                 env->CallVoidMethod (android.activity, quitMethod);
                 return;
-            }
+        }
 
+            DBG ("About to call JuceAppActivity.finish");
             quitMethod = env->GetMethodID (JuceAppActivity, "finish", "()V");
             jassert (quitMethod != 0);
             env->CallVoidMethod (android.activity, quitMethod);

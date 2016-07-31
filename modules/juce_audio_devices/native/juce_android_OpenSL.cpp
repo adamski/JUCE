@@ -121,7 +121,7 @@ private:
         SLresult err = (*obj)->GetInterface (obj, &IntfIID<T>::iid, &type);
         if (type == nullptr || err != SL_RESULT_SUCCESS)
             *this = nullptr;
-    }
+}
 
     SlRef (SlObjectRef&& base) : SlObjectRef (static_cast<SlObjectRef&&> (base))
     {
@@ -870,18 +870,18 @@ public:
 
         if (numInputChannels > 0 && (! RuntimePermissions::isGranted (RuntimePermissions::recordAudio)))
         {
-            // If you hit this assert, you probably forgot to get RuntimePermissions::recordAudio
-            // before trying to open an audio input device. This is not going to work!
-            jassertfalse;
-            lastError = "Error opening OpenSL input device: the app was not granted android.permission.RECORD_AUDIO";
-        }
+                // If you hit this assert, you probably forgot to get RuntimePermissions::recordAudio
+                // before trying to open an audio input device. This is not going to work!
+                jassertfalse;
+                lastError = "Error opening OpenSL input device: the app was not granted android.permission.RECORD_AUDIO";
+            }
 
         session = OpenSLSession::create (slLibrary, numInputChannels, numOutputChannels,
                                          sampleRate, actualBufferSize, audioBuffersToEnqueue);
         if (session != nullptr)
             session->setAudioPreprocessingEnabled (audioProcessingEnabled);
-        else
-        {
+            else
+            {
             if (numInputChannels > 0 && numOutputChannels > 0 && RuntimePermissions::isGranted (RuntimePermissions::recordAudio))
             {
                 // New versions of the Android emulator do not seem to support audio input anymore on OS X
@@ -959,7 +959,7 @@ public:
                     session->setCallback (newCallback);
 
                 oldCallback->audioDeviceStopped();
-            }
+        }
             else
             {
                 jassert (newCallback != nullptr);
@@ -967,7 +967,7 @@ public:
                 // session hasn't started yet
                 session->setCallback (newCallback);
                 session->start();
-            }
+    }
 
             callback = newCallback;
         }
@@ -980,7 +980,7 @@ public:
             callback = nullptr;
             session->stop();
             session->setCallback (nullptr);
-        }
+    }
     }
 
     bool setAudioPreprocessingEnabled (bool shouldAudioProcessingBeEnabled) override
@@ -1057,8 +1057,9 @@ private:
     //==============================================================================
     static String audioManagerGetProperty (const String& property)
     {
+        jobject juceApp = android.activity.callObjectMethod (JuceAppActivity.getJuceApp);
         const LocalRef<jstring> jProperty (javaString (property));
-        const LocalRef<jstring> text ((jstring) android.activity.callObjectMethod (JuceAppActivity.audioManagerGetProperty,
+        const LocalRef<jstring> text ((jstring) getEnv()->CallObjectMethod (juceApp, JuceApp.audioManagerGetProperty,
                                                                                    jProperty.get()));
         if (text.get() != 0)
             return juceString (text);
@@ -1068,8 +1069,9 @@ private:
 
     static bool androidHasSystemFeature (const String& property)
     {
+        jobject juceApp = android.activity.callObjectMethod (JuceAppActivity.getJuceApp);
         const LocalRef<jstring> jProperty (javaString (property));
-        return android.activity.callBooleanMethod (JuceAppActivity.hasSystemFeature, jProperty.get());
+        return getEnv()->CallBooleanMethod (juceApp, JuceApp.hasSystemFeature, jProperty.get());
     }
 
     static double getNativeSampleRate()
@@ -1108,11 +1110,11 @@ private:
     }
 
     static bool isSapaSupported()
-    {
+        {
         static bool supported = isSamsungDevice() && DynamicLibrary().open ("libapa_jni.so");
 
         return supported;
-    }
+        }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OpenSLAudioIODevice)
 };
@@ -1121,7 +1123,7 @@ OpenSLAudioIODevice::OpenSLSession* OpenSLAudioIODevice::OpenSLSession::create (
                                                                                 int numInputChannels, int numOutputChannels,
                                                                                 double samleRateToUse, int bufferSizeToUse,
                                                                                 int numBuffersToUse)
-{
+    {
     ScopedPointer<OpenSLSession> retval;
     auto sdkVersion = getEnv()->GetStaticIntField (AndroidBuildVersion, AndroidBuildVersion.SDK_INT);
 
@@ -1141,16 +1143,16 @@ OpenSLAudioIODevice::OpenSLSession* OpenSLAudioIODevice::OpenSLSession::create (
         retval = new OpenSLSessionT<int16> (slLibrary, numInputChannels, numOutputChannels, samleRateToUse,
                                             bufferSizeToUse, numBuffersToUse);
 
-        if (retval != nullptr && (! retval->openedOK()))
-            retval = nullptr;
+        if (priority != android.activity.callIntMethod (JuceApp.setCurrentThreadPriority, (jint) priority))
+            DBG ("Unable to set audio thread priority: priority is still " << priority);
     }
 
     return retval.release();
 }
 
-//==============================================================================
+    //==============================================================================
 class OpenSLAudioDeviceType  : public AudioIODeviceType
-{
+    {
 public:
     OpenSLAudioDeviceType()  : AudioIODeviceType (OpenSLAudioIODevice::openSLTypeName) {}
 
@@ -1164,7 +1166,7 @@ public:
 
     AudioIODevice* createDevice (const String& outputDeviceName,
                                  const String& inputDeviceName) override
-    {
+        {
         ScopedPointer<OpenSLAudioIODevice> dev;
 
         if (outputDeviceName.isNotEmpty() || inputDeviceName.isNotEmpty())
@@ -1172,19 +1174,19 @@ public:
                                                                          : inputDeviceName);
 
         return dev.release();
-    }
+        }
 
     static bool isOpenSLAvailable()
-    {
+        {
         DynamicLibrary library;
         return library.open ("libOpenSLES.so");
-    }
+        }
 
 private:
 
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OpenSLAudioDeviceType)
-};
+    };
 
 const char* const OpenSLAudioIODevice::openSLTypeName = "Android OpenSL";
 
@@ -1193,20 +1195,20 @@ const char* const OpenSLAudioIODevice::openSLTypeName = "Android OpenSL";
 bool isOpenSLAvailable()  { return OpenSLAudioDeviceType::isOpenSLAvailable(); }
 
 AudioIODeviceType* AudioIODeviceType::createAudioIODeviceType_OpenSLES()
-{
+        {
     return isOpenSLAvailable() ? new OpenSLAudioDeviceType() : nullptr;
-}
+        }
 
-//==============================================================================
+    //==============================================================================
 class SLRealtimeThread
-{
+    {
 public:
     static constexpr int numBuffers = 4;
 
     SLRealtimeThread()
-    {
-        if (auto createEngine = (OpenSLAudioIODevice::OpenSLSession::CreateEngineFunc) slLibrary.getFunction ("slCreateEngine"))
         {
+        if (auto createEngine = (OpenSLAudioIODevice::OpenSLSession::CreateEngineFunc) slLibrary.getFunction ("slCreateEngine"))
+            {
             SLObjectItf obj = nullptr;
             auto err = createEngine (&obj, 0, nullptr, 0, nullptr, nullptr);
 
@@ -1225,13 +1227,13 @@ public:
             {
                 (*obj)->Destroy (obj);
                 return;
-            }
+        }
 
             obj = nullptr;
             err = (*engine)->CreateOutputMix (engine, &obj, 0, nullptr, nullptr);
 
             if (err != SL_RESULT_SUCCESS || obj == nullptr || (*obj)->Realize (obj, 0) != SL_RESULT_SUCCESS)
-            {
+        {
                 (*obj)->Destroy (obj);
                 return;
             }
@@ -1242,7 +1244,7 @@ public:
             {
                 (*obj)->Destroy (obj);
                 return;
-            }
+        }
 
             SLDataLocator_AndroidSimpleBufferQueue queueLocator = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, static_cast<SLuint32> (numBuffers)};
             SLDataLocator_OutputMix outputMixLocator = {SL_DATALOCATOR_OUTPUTMIX, outputMix};
@@ -1266,25 +1268,25 @@ public:
             {
                 (*obj)->Destroy (obj);
                 return;
-            }
+                    }
 
             player = SlRef<SLPlayItf_>::cast (SlObjectRef (obj));
 
             if (player == nullptr)
-            {
+                {
                 (*obj)->Destroy (obj);
                 return;
-            }
+                }
 
             queue = SlRef<SLAndroidSimpleBufferQueueItf_>::cast (player);
             if (queue == nullptr)
                 return;
 
             if ((*queue)->RegisterCallback (queue, staticFinished, this) != SL_RESULT_SUCCESS)
-            {
+        {
                 queue = nullptr;
                 return;
-            }
+        }
 
             pthread_cond_init (&threadReady, nullptr);
             pthread_mutex_init (&threadReadyMutex, nullptr);
@@ -1298,10 +1300,10 @@ public:
         memset (buffer.get(), 0, static_cast<size_t> (sizeof (int16) * static_cast<size_t> (bufferSize * numBuffers)));
 
         for (int i = 0; i < numBuffers; ++i)
-        {
+            {
             int16* dst = buffer.get() + (bufferSize * i);
             (*queue)->Enqueue (queue, dst, static_cast<SLuint32> (static_cast<size_t> (bufferSize) * sizeof (int16)));
-        }
+                }
 
         pthread_mutex_lock (&threadReadyMutex);
 
@@ -1314,10 +1316,10 @@ public:
         pthread_mutex_unlock (&threadReadyMutex);
 
         return threadID;
-    }
+        }
 
     void finished()
-    {
+        {
         if (threadEntryProc != nullptr)
         {
             pthread_mutex_lock (&threadReadyMutex);
@@ -1332,15 +1334,15 @@ public:
 
             (*player)->SetPlayState (player, SL_PLAYSTATE_STOPPED);
             MessageManager::callAsync ([this] () { delete this; });
-        }
-    }
+                }
+                }
 
-private:
+    private:
     //=============================================================================
     static void staticFinished (SLAndroidSimpleBufferQueueItf, void* context)
-    {
+        {
         static_cast<SLRealtimeThread*> (context)->finished();
-    }
+        }
 
     //=============================================================================
     DynamicLibrary slLibrary { "libOpenSLES.so" };
@@ -1374,6 +1376,6 @@ pthread_t juce_createRealtimeAudioThread (void* (*entry) (void*), void* userPtr)
     thread.release();
 
     return threadID;
-}
+    }
 
 } // namespace juce

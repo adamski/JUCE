@@ -74,6 +74,7 @@ void JNIClassBase::releaseAllClasses (JNIEnv* env)
 
 jmethodID JNIClassBase::resolveMethod (JNIEnv* env, const char* methodName, const char* params)
 {
+    DBG ("resolveMethod: "+String(methodName)+", "+String(params));
     jmethodID m = env->GetMethodID (classRef, methodName, params);
     jassert (m != 0);
     return m;
@@ -348,7 +349,7 @@ namespace AndroidStatsHelpers
     static inline String getLocaleValue (bool isRegion)
     {
         return juceString (LocalRef<jstring> ((jstring) getEnv()->CallStaticObjectMethod (JuceAppActivity,
-                                                                                          JuceAppActivity.getLocaleValue,
+                                                                                          JuceApp.getLocaleValue,
                                                                                           isRegion)));
     }
 

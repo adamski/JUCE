@@ -41,11 +41,11 @@ extern JNIEnv* attachAndroidJNI() noexcept;
 class GlobalRef
 {
 public:
-    inline GlobalRef() noexcept                    : obj (0) {}
-    inline explicit GlobalRef (jobject o)          : obj (retain (o)) {}
-    inline GlobalRef (const GlobalRef& other)      : obj (retain (other.obj)) {}
+    inline GlobalRef() noexcept                 : obj (0) {}
+    inline explicit GlobalRef (jobject o)       : obj (retain (o)) {}
+    inline GlobalRef (const GlobalRef& other)   : obj (retain (other.obj)) {}
     inline GlobalRef (GlobalRef && other) noexcept : obj (0) { std::swap (other.obj, obj); }
-    ~GlobalRef()                                             { clear(); }
+    ~GlobalRef()                                { clear(); }
 
     inline void clear()
     {
@@ -133,7 +133,7 @@ public:
         {
             getEnv()->DeleteLocalRef (obj);
             obj = 0;
-        }
+    }
     }
 
     LocalRef& operator= (const LocalRef& other)
@@ -283,38 +283,37 @@ extern AndroidSystem android;
 
 //==============================================================================
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
- METHOD (createNewView,                   "createNewView",                   "(ZJ)L" JUCE_ANDROID_ACTIVITY_CLASSPATH "$ComponentPeerView;") \
- METHOD (deleteView,                      "deleteView",                      "(L" JUCE_ANDROID_ACTIVITY_CLASSPATH "$ComponentPeerView;)V") \
- METHOD (createNativeSurfaceView,         "createNativeSurfaceView",         "(J)L" JUCE_ANDROID_ACTIVITY_CLASSPATH "$NativeSurfaceView;") \
- METHOD (finish,                          "finish",                          "()V") \
- METHOD (setRequestedOrientation,         "setRequestedOrientation",         "(I)V") \
- METHOD (getClipboardContent,             "getClipboardContent",             "()Ljava/lang/String;") \
- METHOD (setClipboardContent,             "setClipboardContent",             "(Ljava/lang/String;)V") \
- METHOD (excludeClipRegion,               "excludeClipRegion",               "(Landroid/graphics/Canvas;FFFF)V") \
- METHOD (renderGlyph,                     "renderGlyph",                     "(CCLandroid/graphics/Paint;Landroid/graphics/Matrix;Landroid/graphics/Rect;)[I") \
- STATICMETHOD (createHTTPStream,          "createHTTPStream",                "(Ljava/lang/String;Z[BLjava/lang/String;I[ILjava/lang/StringBuffer;ILjava/lang/String;)L" JUCE_ANDROID_ACTIVITY_CLASSPATH "$HTTPStream;") \
- METHOD (launchURL,                       "launchURL",                       "(Ljava/lang/String;)V") \
- METHOD (showMessageBox,                  "showMessageBox",                  "(Ljava/lang/String;Ljava/lang/String;J)V") \
+ METHOD (createNewView,                   "createNewView",                   "(ZJ)L" JUCE_ANDROID_APP_CLASSPATH "$ComponentPeerView;") \
+ METHOD (deleteView,                      "deleteView",                      "(L" JUCE_ANDROID_APP_CLASSPATH "$ComponentPeerView;)V") \
+ METHOD (createNativeSurfaceView,         "createNativeSurfaceView",         "(J)L" JUCE_ANDROID_APP_CLASSPATH "$NativeSurfaceView;") \
+ METHOD (postMessage,                     "postMessage",          "(J)V") \
+ METHOD (getClipboardContent,             "getClipboardContent",  "()Ljava/lang/String;") \
+ METHOD (setClipboardContent,             "setClipboardContent",  "(Ljava/lang/String;)V") \
+ METHOD (excludeClipRegion,               "excludeClipRegion",    "(Landroid/graphics/Canvas;FFFF)V") \
+ METHOD (renderGlyph,                     "renderGlyph",          "(CLandroid/graphics/Paint;Landroid/graphics/Matrix;Landroid/graphics/Rect;)[I") \
+ STATICMETHOD (createHTTPStream,          "createHTTPStream",     "(Ljava/lang/String;Z[BLjava/lang/String;I[ILjava/lang/StringBuffer;ILjava/lang/String;)L" JUCE_ANDROID_APP_CLASSPATH "$HTTPStream;") \
+ METHOD (launchURL,                       "launchURL",            "(Ljava/lang/String;)V") \
+ METHOD (showMessageBox,                  "showMessageBox",       "(Ljava/lang/String;Ljava/lang/String;J)V") \
  METHOD (showOkCancelBox,                 "showOkCancelBox",                 "(Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)V") \
- METHOD (showYesNoCancelBox,              "showYesNoCancelBox",              "(Ljava/lang/String;Ljava/lang/String;J)V") \
- STATICMETHOD (getLocaleValue,            "getLocaleValue",                  "(Z)Ljava/lang/String;") \
- STATICMETHOD (getDocumentsFolder,        "getDocumentsFolder",              "()Ljava/lang/String;") \
- STATICMETHOD (getPicturesFolder,         "getPicturesFolder",               "()Ljava/lang/String;") \
- STATICMETHOD (getMusicFolder,            "getMusicFolder",                  "()Ljava/lang/String;") \
- STATICMETHOD (getDownloadsFolder,        "getDownloadsFolder",              "()Ljava/lang/String;") \
- STATICMETHOD (getMoviesFolder,           "getMoviesFolder",                 "()Ljava/lang/String;") \
- METHOD (getTypeFaceFromAsset,            "getTypeFaceFromAsset",            "(Ljava/lang/String;)Landroid/graphics/Typeface;") \
- METHOD (getTypeFaceFromByteArray,        "getTypeFaceFromByteArray",        "([B)Landroid/graphics/Typeface;") \
- METHOD (setScreenSaver,                  "setScreenSaver",                  "(Z)V") \
- METHOD (getScreenSaver,                  "getScreenSaver",                  "()Z") \
- METHOD (getAndroidMidiDeviceManager,     "getAndroidMidiDeviceManager",     "()L" JUCE_ANDROID_ACTIVITY_CLASSPATH "$MidiDeviceManager;") \
- METHOD (getAndroidBluetoothManager,      "getAndroidBluetoothManager",      "()L" JUCE_ANDROID_ACTIVITY_CLASSPATH "$BluetoothManager;") \
- STATICMETHOD (getAndroidSDKVersion,      "getAndroidSDKVersion",            "()I") \
- METHOD (audioManagerGetProperty,         "audioManagerGetProperty",         "(Ljava/lang/String;)Ljava/lang/String;") \
- METHOD (hasSystemFeature,                "hasSystemFeature",                "(Ljava/lang/String;)Z" ) \
- METHOD (requestRuntimePermission,        "requestRuntimePermission",        "(IJ)V" ) \
- METHOD (isPermissionGranted,             "isPermissionGranted",             "(I)Z" ) \
- METHOD (isPermissionDeclaredInManifest,  "isPermissionDeclaredInManifest",  "(I)Z" ) \
+ METHOD (showYesNoCancelBox,              "showYesNoCancelBox",   "(Ljava/lang/String;Ljava/lang/String;J)V") \
+ STATICMETHOD (getLocaleValue,            "getLocaleValue",       "(Z)Ljava/lang/String;") \
+ STATICMETHOD (getDocumentsFolder,        "getDocumentsFolder", "()Ljava/lang/String;") \
+ STATICMETHOD (getPicturesFolder,         "getPicturesFolder",  "()Ljava/lang/String;") \
+ STATICMETHOD (getMusicFolder,            "getMusicFolder",     "()Ljava/lang/String;") \
+ STATICMETHOD (getDownloadsFolder,        "getDownloadsFolder", "()Ljava/lang/String;") \
+ STATICMETHOD (getMoviesFolder,           "getMoviesFolder",    "()Ljava/lang/String;") \
+ METHOD (getTypeFaceFromAsset,            "getTypeFaceFromAsset", "(Ljava/lang/String;)Landroid/graphics/Typeface;") \
+ METHOD (getTypeFaceFromByteArray,        "getTypeFaceFromByteArray","([B)Landroid/graphics/Typeface;") \
+ METHOD (setScreenSaver,                  "setScreenSaver",       "(Z)V") \
+ METHOD (getScreenSaver,                  "getScreenSaver",       "()Z") \
+ METHOD (getAndroidMidiDeviceManager,     "getAndroidMidiDeviceManager", "()L" JUCE_ANDROID_APP_CLASSPATH "$MidiDeviceManager;") \
+ METHOD (getAndroidBluetoothManager,      "getAndroidBluetoothManager", "()L" JUCE_ANDROID_APP_CLASSPATH "$BluetoothManager;") \
+ METHOD (getAndroidSDKVersion,            "getAndroidSDKVersion", "()I") \
+ METHOD (audioManagerGetProperty,         "audioManagerGetProperty", "(Ljava/lang/String;)Ljava/lang/String;") \
+ METHOD (hasSystemFeature,                "hasSystemFeature", "(Ljava/lang/String;)Z" ) \
+ METHOD (requestRuntimePermission,        "requestRuntimePermission", "(IJ)V" ) \
+ METHOD (isPermissionGranted,             "isPermissionGranted", "(I)Z" ) \
+ METHOD (isPermissionDeclaredInManifest, "isPermissionDeclaredInManifest", "(I)Z" ) \
  METHOD (getAssets,                       "getAssets",                       "()Landroid/content/res/AssetManager;") \
  METHOD (getSystemService,                "getSystemService",                "(Ljava/lang/String;)Ljava/lang/Object;") \
  METHOD (getPackageManager,               "getPackageManager",               "()Landroid/content/pm/PackageManager;") \
@@ -329,6 +328,16 @@ extern AndroidSystem android;
  METHOD (startActivity,                   "startActivity",                   "(Landroid/content/Intent;)V") \
  METHOD (startActivityForResult,          "startActivityForResult",          "(Landroid/content/Intent;I)V") \
  METHOD (getContentResolver,              "getContentResolver",              "()Landroid/content/ContentResolver;") \
+
+DECLARE_JNI_CLASS (JuceApp, JUCE_ANDROID_APP_CLASSPATH);
+#undef JNI_CLASS_MEMBERS
+
+
+#define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
+ METHOD (finish,                          "finish",                          "()V") \
+ METHOD (setRequestedOrientation,"setRequestedOrientation", "(I)V") \
+ METHOD (setScreenSaver,          "setScreenSaver",       "(Z)V") \
+ METHOD (getJuceApp, "getJuceApp", "()L" JUCE_ANDROID_APP_CLASSPATH ";") \
 
 DECLARE_JNI_CLASS (JuceAppActivity, JUCE_ANDROID_ACTIVITY_CLASSPATH);
 #undef JNI_CLASS_MEMBERS
@@ -483,7 +492,7 @@ DECLARE_JNI_CLASS (JavaBoolean, "java/lang/Boolean");
 #undef JNI_CLASS_MEMBERS
 
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
-  METHOD (constructor,        "<init>",             "()V") \
+ METHOD (constructor,   "<init>",    "()V") \
   METHOD (containsKey,        "containsKey",        "(Ljava/lang/String;)Z") \
   METHOD (get,                "get",                "(Ljava/lang/String;)Ljava/lang/Object;") \
   METHOD (getBoolean,         "getBoolean",         "(Ljava/lang/String;)Z") \
@@ -514,7 +523,7 @@ DECLARE_JNI_CLASS (JavaCharSequence, "java/lang/CharSequence");
 #undef JNI_CLASS_MEMBERS
 
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
-  METHOD (getName,           "getName",           "()Ljava/lang/String;") \
+ METHOD (getName, "getName", "()Ljava/lang/String;") \
   METHOD (getModifiers,      "getModifiers",      "()I")            \
   METHOD (isAnnotation,      "isAnnotation",      "()Z") \
   METHOD (isAnonymousClass,  "isAnonymousClass",  "()Z") \

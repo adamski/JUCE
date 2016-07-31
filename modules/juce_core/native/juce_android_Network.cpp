@@ -40,7 +40,7 @@ DECLARE_JNI_CLASS (StringBuffer, "java/lang/StringBuffer");
  METHOD (isExhausted, "isExhausted", "()Z") \
  METHOD (setPosition, "setPosition", "(J)Z") \
 
-DECLARE_JNI_CLASS (HTTPStream, JUCE_ANDROID_ACTIVITY_CLASSPATH "$HTTPStream");
+DECLARE_JNI_CLASS (HTTPStream, JUCE_ANDROID_APP_CLASSPATH "$HTTPStream");
 #undef JNI_CLASS_MEMBERS
 
 //==============================================================================
@@ -164,67 +164,63 @@ public:
         {
             String address = url.toString (! isPost);
 
-            if (! address.contains ("://"))
-                address = "http://" + address;
+        if (! address.contains ("://"))
+            address = "http://" + address;
 
             MemoryBlock postData;
             if (isPost)
                 WebInputStream::createHeadersAndPostData (url, headers, postData);
 
-            jbyteArray postDataArray = 0;
+        jbyteArray postDataArray = 0;
 
-            if (postData.getSize() > 0)
-            {
+        if (postData.getSize() > 0)
+        {
                 postDataArray = env->NewByteArray (static_cast<jsize> (postData.getSize()));
                 env->SetByteArrayRegion (postDataArray, 0, static_cast<jsize> (postData.getSize()), (const jbyte*) postData.getData());
-            }
+        }
 
-            LocalRef<jobject> responseHeaderBuffer (env->NewObject (StringBuffer, StringBuffer.constructor));
+        LocalRef<jobject> responseHeaderBuffer (env->NewObject (StringBuffer, StringBuffer.constructor));
 
-            // Annoyingly, the android HTTP functions will choke on this call if you try to do it on the message
-            // thread. You'll need to move your networking code to a background thread to keep it happy..
-            jassert (Thread::getCurrentThread() != nullptr);
+        // Annoyingly, the android HTTP functions will choke on this call if you try to do it on the message
+        // thread. You'll need to move your networking code to a background thread to keep it happy..
+        jassert (Thread::getCurrentThread() != nullptr);
 
-            jintArray statusCodeArray = env->NewIntArray (1);
-            jassert (statusCodeArray != 0);
+        jintArray statusCodeArray = env->NewIntArray (1);
+        jassert (statusCodeArray != 0);
 
-            {
-                const ScopedLock lock (createStreamLock);
-
-                if (! hasBeenCancelled)
-                    stream = GlobalRef (LocalRef<jobject> (env->CallStaticObjectMethod (JuceAppActivity,
-                                                                                        JuceAppActivity.createHTTPStream,
-                                                                                        javaString (address).get(),
-                                                                                        (jboolean) isPost,
-                                                                                        postDataArray,
-                                                                                        javaString (headers).get(),
-                                                                                        (jint) timeOutMs,
-                                                                                        statusCodeArray,
-                                                                                        responseHeaderBuffer.get(),
-                                                                                        (jint) numRedirectsToFollow,
+        stream = GlobalRef (env->CallStaticObjectMethod (JuceAppActivity,
+                                                         JuceApp.createHTTPStream,
+                                                         javaString (address).get(),
+                                                         (jboolean) isPost,
+                                                         postDataArray,
+                                                         javaString (headers).get(),
+                                                         (jint) timeOutMs,
+                                                         statusCodeArray,
+                                                         responseHeaderBuffer.get(),
+                                                         (jint) numRedirectsToFollow,
                                                                                         javaString (httpRequest).get())));
             }
 
             if (stream != 0 && ! stream.callBooleanMethod (HTTPStream.connect))
                 stream.clear();
 
-            jint* const statusCodeElements = env->GetIntArrayElements (statusCodeArray, 0);
-            statusCode = statusCodeElements[0];
-            env->ReleaseIntArrayElements (statusCodeArray, statusCodeElements, 0);
-            env->DeleteLocalRef (statusCodeArray);
+        jint* const statusCodeElements = env->GetIntArrayElements (statusCodeArray, 0);
+        statusCode = statusCodeElements[0];
+        env->ReleaseIntArrayElements (statusCodeArray, statusCodeElements, 0);
+        env->DeleteLocalRef (statusCodeArray);
 
-            if (postDataArray != 0)
-                env->DeleteLocalRef (postDataArray);
+        if (postDataArray != 0)
+            env->DeleteLocalRef (postDataArray);
 
-            if (stream != 0)
+        if (stream != 0)
+        {
+            StringArray headerLines;
+
             {
-                StringArray headerLines;
-
-                {
-                    LocalRef<jstring> headersString ((jstring) env->CallObjectMethod (responseHeaderBuffer.get(),
-                                                                                      StringBuffer.toString));
-                    headerLines.addLines (juceString (env, headersString));
-                }
+                LocalRef<jstring> headersString ((jstring) env->CallObjectMethod (responseHeaderBuffer.get(),
+                                                                                  StringBuffer.toString));
+                headerLines.addLines (juceString (env, headersString));
+            }
 
                 for (int i = 0; i < headerLines.size(); ++i)
                 {
