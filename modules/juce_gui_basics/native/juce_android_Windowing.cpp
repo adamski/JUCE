@@ -33,7 +33,7 @@ namespace juce
 
 //==============================================================================
 JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env, jobject juceBridge,
-        jstring appFile, jstring appDataDir))
+                                                                      jstring appFile, jstring appDataDir))
 {
     setEnv (env);
     DBG ("setEnv");
@@ -52,7 +52,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env,
         if (! app->initialiseApp()) {
             DBG ("app->initialiseApp() returned false, calling shutdownApp...");
             exit (app->shutdownApp());
-        }
+    }
     }
     else
     {
@@ -141,7 +141,7 @@ public:
         // which will fail if the peer is only half-constructed.
         DBG ("AndroidComponentPeer constructor: "+component.getName());
         view = GlobalRef (android.bridge.callObjectMethod (JuceBridge.createNewView,
-                                                           (jboolean) component.isOpaque(),
+                                                             (jboolean) component.isOpaque(),
                                                            (jlong) this,
                 (jstring) javaString(component.getName())));
 
