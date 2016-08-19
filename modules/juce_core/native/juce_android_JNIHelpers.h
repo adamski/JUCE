@@ -302,7 +302,6 @@ extern AndroidSystem android;
 DECLARE_JNI_CLASS (JuceBridge, JUCE_ANDROID_BRIDGE_CLASSPATH);
 #undef JNI_CLASS_MEMBERS
 
-
 //==============================================================================
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
  METHOD (constructor,   "<init>",           "(I)V") \
