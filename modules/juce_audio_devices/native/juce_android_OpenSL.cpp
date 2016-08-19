@@ -1057,9 +1057,8 @@ private:
     //==============================================================================
     static String audioManagerGetProperty (const String& property)
     {
-        jobject juceApp = android.activity.callObjectMethod (JuceAppActivity.getJuceApp);
         const LocalRef<jstring> jProperty (javaString (property));
-        const LocalRef<jstring> text ((jstring) getEnv()->CallObjectMethod (juceApp, JuceApp.audioManagerGetProperty,
+        const LocalRef<jstring> text ((jstring) android.bridge.callObjectMethod (JuceBridge.audioManagerGetProperty,
                                                                                    jProperty.get()));
         if (text.get() != 0)
             return juceString (text);
@@ -1069,9 +1068,8 @@ private:
 
     static bool androidHasSystemFeature (const String& property)
     {
-        jobject juceApp = android.activity.callObjectMethod (JuceAppActivity.getJuceApp);
         const LocalRef<jstring> jProperty (javaString (property));
-        return getEnv()->CallBooleanMethod (juceApp, JuceApp.hasSystemFeature, jProperty.get());
+        return android.bridge.callBooleanMethod (JuceBridge.hasSystemFeature, jProperty.get());
     }
 
     static double getNativeSampleRate()
@@ -1143,7 +1141,7 @@ OpenSLAudioIODevice::OpenSLSession* OpenSLAudioIODevice::OpenSLSession::create (
         retval = new OpenSLSessionT<int16> (slLibrary, numInputChannels, numOutputChannels, samleRateToUse,
                                             bufferSizeToUse, numBuffersToUse);
 
-        if (priority != android.activity.callIntMethod (JuceApp.setCurrentThreadPriority, (jint) priority))
+        if (priority != android.bridge.callIntMethod (JuceBridge.setCurrentThreadPriority, (jint) priority))
             DBG ("Unable to set audio thread priority: priority is still " << priority);
     }
 

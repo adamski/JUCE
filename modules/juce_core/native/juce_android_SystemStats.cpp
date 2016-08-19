@@ -308,7 +308,7 @@ AndroidSystem::AndroidSystem() : screenWidth (0), screenHeight (0), dpi (160)
 {
 }
 
-void AndroidSystem::initialise (JNIEnv* env, jobject act, jstring file, jstring dataDir)
+void AndroidSystem::initialise (JNIEnv* env, jobject juceBridge, jobject currentActivity, jstring file, jstring dataDir)
 {
     setEnv (env);
 
@@ -316,13 +316,16 @@ void AndroidSystem::initialise (JNIEnv* env, jobject act, jstring file, jstring 
     dpi = 160;
     JNIClassBase::initialiseAllClasses (env);
 
-    activity = GlobalRef (act);
+    bridge = GlobalRef (juceBridge);
+    activity = GlobalRef (currentActivity);
     appFile = juceString (env, file);
     appDataDir = juceString (env, dataDir);
+    initialised = true;
 }
 
 void AndroidSystem::shutdown (JNIEnv* env)
 {
+    bridge.clear();
     activity.clear();
 
     JNIClassBase::releaseAllClasses (env);
@@ -348,8 +351,8 @@ namespace AndroidStatsHelpers
 
     static inline String getLocaleValue (bool isRegion)
     {
-        return juceString (LocalRef<jstring> ((jstring) getEnv()->CallStaticObjectMethod (JuceAppActivity,
-                                                                                          JuceApp.getLocaleValue,
+        return juceString (LocalRef<jstring> ((jstring) getEnv()->CallStaticObjectMethod (JuceBridge,
+                                                                                          JuceBridge.getLocaleValue,
                                                                                           isRegion)));
     }
 

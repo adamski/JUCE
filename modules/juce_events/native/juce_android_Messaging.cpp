@@ -78,11 +78,11 @@ namespace Android
 struct AndroidMessageQueue     : private Android::Runnable
 {
     message->incReferenceCount();
-    android.activity.callVoidMethod (JuceApp.postMessage, (jlong) (pointer_sized_uint) message);
+    android.bridge.callVoidMethod (JuceBridge.postMessage, (jlong) (pointer_sized_uint) message);
     return true;
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_APP_CLASSNAME, deliverMessage, void, (JNIEnv* env, jobject activity, jlong value))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, deliverMessage, void, (JNIEnv* env, jobject activity, jlong value))
 {
         jassert (MessageManager::getInstance()->isThisTheMessageThread());
         clearSingletonInstance();
@@ -156,18 +156,18 @@ void MessageManager::stopDispatchLoop()
         {
             auto* env = getEnv();
 
-            jmethodID quitMethod = env->GetMethodID (JuceAppActivity, "finishAndRemoveTask", "()V");
+            jmethodID quitMethod = env->GetMethodID (JuceBridge, "finishAndRemoveTask", "()V");
 
             if (quitMethod != 0)
             {
-                env->CallVoidMethod (android.activity, quitMethod);
+                env->CallVoidMethod (android.bridge, quitMethod);
                 return;
-        }
+            }
 
-            DBG ("About to call JuceAppActivity.finish");
-            quitMethod = env->GetMethodID (JuceAppActivity, "finish", "()V");
+            
+            quitMethod = env->GetMethodID (JuceBridge, "finish", "()V");
             jassert (quitMethod != 0);
-            env->CallVoidMethod (android.activity, quitMethod);
+            env->CallVoidMethod (android.bridge, quitMethod);
         }
     };
 

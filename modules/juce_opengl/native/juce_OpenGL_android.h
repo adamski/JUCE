@@ -32,7 +32,8 @@ namespace juce
  METHOD (layout, "layout", "(IIII)V" ) \
  METHOD (getNativeSurface,     "getNativeSurface",        "()Landroid/view/Surface;") \
 
-DECLARE_JNI_CLASS (NativeSurfaceView, JUCE_ANDROID_APP_CLASSPATH "$NativeSurfaceView")
+DECLARE_JNI_CLASS (NativeSurfaceView, JUCE_ANDROID_BRIDGE_CLASSPATH
+"$NativeSurfaceView")
 #undef JNI_CLASS_MEMBERS
 
 //==============================================================================
@@ -59,8 +60,8 @@ public:
             return;
 
         // create a native surface view
-        surfaceView = GlobalRef (env->CallObjectMethod (android.activity.get(),
-                                                        JuceApp.createNativeSurfaceView,
+        surfaceView = GlobalRef (env->CallObjectMethod (android.bridge.get(),
+                                                        JuceBridge.createNativeSurfaceView,
                                                         reinterpret_cast<jlong> (this)));
         if (surfaceView.get() == nullptr)
             return;
@@ -282,7 +283,7 @@ private:
 };
 
 //==============================================================================
-JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_APP_CLASSNAME, _00024NativeSurfaceView), dispatchDrawNative,
+JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_BRIDGE_CLASSNAME, _00024NativeSurfaceView), dispatchDrawNative,
                    void, (JNIEnv* env, jobject nativeView, jlong host, jobject canvas))
 {
     ignoreUnused (nativeView);
@@ -290,7 +291,7 @@ JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_APP_CLASSNAME, _00024NativeSurf
     reinterpret_cast<OpenGLContext::NativeContext*> (host)->dispatchDraw (canvas);
 }
 
-JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_APP_CLASSNAME, _00024NativeSurfaceView), surfaceChangedNative,
+JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_BRIDGE_CLASSNAME, _00024NativeSurfaceView), surfaceChangedNative,
                    void, (JNIEnv* env, jobject nativeView, jlong host, jobject holder, jint format, jint width, jint height))
 {
     ignoreUnused (nativeView);
@@ -298,7 +299,7 @@ JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_APP_CLASSNAME, _00024NativeSurf
     reinterpret_cast<OpenGLContext::NativeContext*> (host)->surfaceChanged (holder, format, width, height);
 }
 
-JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_APP_CLASSNAME, _00024NativeSurfaceView), surfaceCreatedNative,
+JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_BRIDGE_CLASSNAME, _00024NativeSurfaceView), surfaceCreatedNative,
                    void, (JNIEnv* env, jobject nativeView, jlong host, jobject holder))
 {
     ignoreUnused (nativeView);
@@ -306,7 +307,7 @@ JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_APP_CLASSNAME, _00024NativeSurf
     reinterpret_cast<OpenGLContext::NativeContext*> (host)->surfaceCreated (holder);
 }
 
-JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_APP_CLASSNAME, _00024NativeSurfaceView), surfaceDestroyedNative,
+JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_BRIDGE_CLASSNAME, _00024NativeSurfaceView), surfaceDestroyedNative,
                    void, (JNIEnv* env, jobject nativeView, jlong host, jobject holder))
 {
     ignoreUnused (nativeView);
