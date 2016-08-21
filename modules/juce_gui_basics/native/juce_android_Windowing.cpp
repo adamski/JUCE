@@ -145,7 +145,6 @@ public:
                                                            (jlong) this,
                                                            (jstring) javaString(component.getName())));
 
-
         if (isFocused())
             handleFocusGain();
     }
