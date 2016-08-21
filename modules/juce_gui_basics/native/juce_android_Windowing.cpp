@@ -141,9 +141,9 @@ public:
         // which will fail if the peer is only half-constructed.
         DBG ("AndroidComponentPeer constructor: "+component.getName());
         view = GlobalRef (android.bridge.callObjectMethod (JuceBridge.createNewView,
-                                                             (jboolean) component.isOpaque(),
+                                                           (jboolean) component.isOpaque(),
                                                            (jlong) this,
-                (jstring) javaString(component.getName())));
+                                                           (jstring) javaString(component.getName())));
 
 
         if (isFocused())
