@@ -162,7 +162,7 @@ void MessageManager::stopDispatchLoop()
             {
                 env->CallVoidMethod (android.bridge, quitMethod);
                 return;
-            }
+        }
 
             
             quitMethod = env->GetMethodID (JuceBridge, "finish", "()V");

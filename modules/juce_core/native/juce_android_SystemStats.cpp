@@ -308,7 +308,7 @@ AndroidSystem::AndroidSystem() : screenWidth (0), screenHeight (0), dpi (160)
 {
 }
 
-void AndroidSystem::initialise (JNIEnv* env, jobject juceBridge, jobject currentActivity, jstring file, jstring dataDir)
+void AndroidSystem::initialise (JNIEnv* env, jobject juceBridge, jstring file, jstring dataDir)
 {
     setEnv (env);
 
@@ -317,7 +317,6 @@ void AndroidSystem::initialise (JNIEnv* env, jobject juceBridge, jobject current
     JNIClassBase::initialiseAllClasses (env);
 
     bridge = GlobalRef (juceBridge);
-    activity = GlobalRef (currentActivity);
     appFile = juceString (env, file);
     appDataDir = juceString (env, dataDir);
     initialised = true;
@@ -326,7 +325,6 @@ void AndroidSystem::initialise (JNIEnv* env, jobject juceBridge, jobject current
 void AndroidSystem::shutdown (JNIEnv* env)
 {
     bridge.clear();
-    activity.clear();
 
     JNIClassBase::releaseAllClasses (env);
 }

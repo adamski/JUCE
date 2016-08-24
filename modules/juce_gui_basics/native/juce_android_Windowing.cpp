@@ -51,13 +51,13 @@ namespace juce
 extern void juce_contentSharingCompleted (int);
 
 //==============================================================================
-    JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env, jobject juceBridge,
-                                                                        jobject currentActivity, jstring appFile, jstring appDataDir))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env, jobject juceBridge,
+        jstring appFile, jstring appDataDir))
 {
     setEnv (env);
     DBG ("setEnv");
 
-    android.initialise (env, juceBridge, currentActivity, appFile, appDataDir);
+    android.initialise (env, juceBridge, appFile, appDataDir);
     DBG ("initialise");
 
     DBG (SystemStats::getJUCEVersion());
@@ -911,7 +911,7 @@ ModifierKeys ModifierKeys::getCurrentModifiersRealtime() noexcept
 
 JUCE_API void JUCE_CALLTYPE Process::hide()
 {
-    if (android.activity.callBooleanMethod (JuceApp.moveTaskToBack, true) == 0)
+    if (android.bridge.callBooleanMethod (JuceBridge.moveTaskToBack, true) == 0)
     {
         auto* env = getEnv();
 
@@ -919,7 +919,8 @@ JUCE_API void JUCE_CALLTYPE Process::hide()
         env->CallObjectMethod (intent, AndroidIntent.setAction,   javaString ("android.intent.action.MAIN")  .get());
         env->CallObjectMethod (intent, AndroidIntent.addCategory, javaString ("android.intent.category.HOME").get());
 
-        android.activity.callVoidMethod (JuceApp.startActivity, intent.get());
+        GlobalRef activity = GlobalRef (android.bridge.callObjectMethod (JuceBridge.getActivityContext()));
+        android.bridge.callVoidMethod (activity.startActivity, intent.get()); // This is just guesswork, expecting to fail
     }
 }
 
@@ -1038,7 +1039,7 @@ static jint getAndroidOrientationFlag (int orientations) noexcept
 
 void Desktop::allowedOrientationsChanged()
 {
-    android.activity.callVoidMethod (JuceAppActivity.setRequestedOrientation,
+    android.bridge.callVoidMethod (JuceBridge.setRequestedOrientation,
                                      getAndroidOrientationFlag (allowedOrientations));
 }
 
