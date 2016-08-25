@@ -35,7 +35,7 @@ namespace juce
  METHOD (getBluetoothDeviceStatus, "getBluetoothDeviceStatus", "(Ljava/lang/String;)I") \
  METHOD (startStopScan, "startStopScan", "(Z)V")
 
-DECLARE_JNI_CLASS (AndroidBluetoothManager, JUCE_ANDROID_ACTIVITY_CLASSPATH "$BluetoothManager");
+DECLARE_JNI_CLASS (AndroidBluetoothManager, JUCE_ANDROID_BRIDGE_CLASSPATH "$BluetoothManager");
 #undef JNI_CLASS_MEMBERS
 
 //==============================================================================
@@ -56,7 +56,7 @@ struct AndroidBluetoothMidiInterface
 
         JNIEnv* env = getEnv();
 
-        LocalRef<jobject> btManager (android.activity.callObjectMethod (JuceAppActivity.getAndroidBluetoothManager));
+        LocalRef<jobject> btManager (android.bridge.callObjectMethod (JuceBridge.getAndroidBluetoothManager));
 
         // if this is null then bluetooth is not enabled
         if (btManager.get() == nullptr)
@@ -82,7 +82,7 @@ struct AndroidBluetoothMidiInterface
     {
         JNIEnv* env = getEnv();
 
-        LocalRef<jobject> btManager (android.activity.callObjectMethod (JuceAppActivity.getAndroidBluetoothManager));
+        LocalRef<jobject> btManager (android.bridge.callObjectMethod (JuceBridge.getAndroidBluetoothManager));
         if (btManager.get() == nullptr)
             return false;
 
@@ -96,7 +96,7 @@ struct AndroidBluetoothMidiInterface
     {
         JNIEnv* env = getEnv();
 
-        LocalRef<jobject> btManager (android.activity.callObjectMethod (JuceAppActivity.getAndroidBluetoothManager));
+        LocalRef<jobject> btManager (android.bridge.callObjectMethod (JuceBridge.getAndroidBluetoothManager));
 
         if (btManager.get() != nullptr)
             env->CallVoidMethod (btManager.get(), AndroidBluetoothManager.unpairBluetoothMidiDevice,
@@ -108,7 +108,7 @@ struct AndroidBluetoothMidiInterface
     {
         JNIEnv* env = getEnv();
 
-        LocalRef<jobject> btManager (android.activity.callObjectMethod (JuceAppActivity.getAndroidBluetoothManager));
+        LocalRef<jobject> btManager (android.bridge.callObjectMethod (JuceBridge.getAndroidBluetoothManager));
 
         if (btManager.get() == nullptr)
             return address;
@@ -136,7 +136,7 @@ struct AndroidBluetoothMidiInterface
     {
         JNIEnv* env = getEnv();
 
-        LocalRef<jobject> btManager (android.activity.callObjectMethod (JuceAppActivity.getAndroidBluetoothManager));
+        LocalRef<jobject> btManager (android.bridge.callObjectMethod (JuceBridge.getAndroidBluetoothManager));
 
         if (btManager.get() == nullptr)
             return unpaired;
@@ -502,7 +502,7 @@ bool BluetoothMidiDevicePairingDialogue::open (ModalComponentManager::Callback* 
 
 bool BluetoothMidiDevicePairingDialogue::isAvailable()
 {
-    jobject btManager (android.activity.callObjectMethod (JuceAppActivity.getAndroidBluetoothManager));
+    jobject btManager (android.bridge.callObjectMethod (JuceBridge.getAndroidBluetoothManager));
     return btManager != nullptr;
 }
 
