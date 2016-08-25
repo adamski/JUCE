@@ -89,7 +89,7 @@ public:
         props.add (new TextWithDefaultPropertyComponent<String> (buildToolsVersion, "Android build tools version", 32),
                    "The Android build tools version that Android Studio should use to build this app");
     }
-    
+
     void createOtherExporterProperties (PropertyListBuilder& props) override
     {
         AndroidProjectExporterBase::createOtherExporterProperties (props);
@@ -137,16 +137,20 @@ public:
     //==============================================================================
     void create (const OwnedArray<LibraryModule>& modules) const override
     {
+
         const File targetFolder (getTargetFolder());
         
-        removeOldFiles (targetFolder);
+        // if (removeAllJavaFilesOnSave)
+        //     removeOldFiles (targetFolder);
 
         {
-            const String package (getActivityClassPackage());
-            const String path (package.replaceCharacter ('.', File::separator));
-            const File javaTarget (targetFolder.getChildFile ("app/src/main/java").getChildFile (path));
+//            const String package (getActivityClassPackage());
 
-            copyActivityJavaFiles (modules, javaTarget, package);
+            const String path (getJuceClassPackage().replaceCharacter ('.', File::separator));
+            const File javaTarget (targetFolder.getChildFile ("app/src/main/java").getChildFile (path));
+            removeOldFiles (javaTarget);
+
+            copyActivityJavaFiles (modules, javaTarget, getJuceClassPackage());
         }
 
         writeFile (targetFolder, "settings.gradle",  getSettingsGradleFileContent());
@@ -607,7 +611,7 @@ private:
         auto defaultConfig = new GradleObject ("defaultConfig.with");
 
         defaultConfig->add<GradleString> ("applicationId",             bundleIdentifier);
-        defaultConfig->add<GradleValue>  ("minSdkVersion.apiLevel",    minSdkVersion);
+        defaultConfig->add<GradleValue>  ("minSdkVersion.apiLevel",      minSdkVersion);
         defaultConfig->add<GradleValue>  ("targetSdkVersion.apiLevel", targetSdkVersion);
 
         return defaultConfig;
@@ -774,10 +778,12 @@ private:
         for (const auto& path : config.getLibrarySearchPaths())
             ndkSettings->add<GradleLibrarySearchPath> (path);
         
+        String juceClassName (getJuceClassPackage() + ".JuceBridge");
+
         ndkSettings->add<GradlePreprocessorDefine> ("JUCE_ANDROID", "1");
         ndkSettings->add<GradlePreprocessorDefine> ("JUCE_ANDROID_API_VERSION", androidMinimumSDK.get());
-        ndkSettings->add<GradlePreprocessorDefine> ("JUCE_ANDROID_ACTIVITY_CLASSNAME", getJNIActivityClassName().replaceCharacter ('/', '_'));
-        ndkSettings->add<GradlePreprocessorDefine> ("JUCE_ANDROID_ACTIVITY_CLASSPATH","\\\"" + androidActivityClass.get().replaceCharacter('.', '/') + "\\\"");
+        ndkSettings->add<GradlePreprocessorDefine> ("JUCE_ANDROID_BRIDGE_CLASSNAME", juceClassName.replaceCharacter ('.', '_'));
+        ndkSettings->add<GradlePreprocessorDefine> ("JUCE_ANDROID_BRIDGE_CLASSPATH","\\\"" + juceClassName.replaceCharacter('.', '/') + "\\\"");
 
         const auto defines = config.getAllPreprocessorDefs();
         for (int i = 0; i < defines.size(); ++i)
