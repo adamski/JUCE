@@ -137,7 +137,6 @@ public:
           sizeAllocated (0),
           scale ((float) Desktop::getInstance().getDisplays().getMainDisplay().scale)
     {
-        DBG ("AndroidComponentPeer constructor");
         // NB: must not put this in the initialiser list, as it invokes a callback,
         // which will fail if the peer is only half-constructed.
         DBG ("AndroidComponentPeer constructor: "+component.getName());
@@ -145,6 +144,7 @@ public:
                                                            (jboolean) component.isOpaque(),
                                                            (jlong) this,
                 (jstring) javaString(component.getName())));
+
 
         if (isFocused())
             handleFocusGain();
