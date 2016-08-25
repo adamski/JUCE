@@ -23,10 +23,6 @@
 namespace juce
 {
 
-#if ! (defined (JUCE_ANDROID_ACTIVITY_CLASSNAME) && defined (JUCE_ANDROID_ACTIVITY_CLASSPATH))
- #error "The JUCE_ANDROID_ACTIVITY_CLASSNAME and JUCE_ANDROID_ACTIVITY_CLASSPATH macros must be set!"
-#endif
-
 #if ! (defined (JUCE_ANDROID_BRIDGE_CLASSNAME) && defined (JUCE_ANDROID_BRIDGE_CLASSPATH))
  #error "The JUCE_ANDROID_BRIDGE_CLASSNAME and JUCE_ANDROID_BRIDGE_CLASSPATH macros must be set!"
 #endif
@@ -307,7 +303,7 @@ extern AndroidSystem android;
  STATICMETHOD (getMusicFolder,     "getMusicFolder",     "()Ljava/lang/String;") \
  STATICMETHOD (getDownloadsFolder, "getDownloadsFolder", "()Ljava/lang/String;") \
  STATICMETHOD (getMoviesFolder,    "getMoviesFolder",    "()Ljava/lang/String;") \
- //METHOD (scanFile,               "scanFile",             "(Ljava/lang/String;)V") \
+ METHOD (scanFile,               "scanFile",             "(Ljava/lang/String;)V") \ 
  METHOD (getTypeFaceFromAsset,   "getTypeFaceFromAsset", "(Ljava/lang/String;)Landroid/graphics/Typeface;") \
  METHOD (getTypeFaceFromByteArray,"getTypeFaceFromByteArray","([B)Landroid/graphics/Typeface;") \
  METHOD (setScreenSaver,          "setScreenSaver",       "(Z)V") \
@@ -319,9 +315,9 @@ extern AndroidSystem android;
  METHOD (getAndroidBluetoothManager, "getAndroidBluetoothManager", "()L" JUCE_ANDROID_BRIDGE_CLASSPATH "$BluetoothManager;") \
  METHOD (getAndroidSDKVersion,    "getAndroidSDKVersion", "()I") \
  METHOD (audioManagerGetProperty, "audioManagerGetProperty", "(Ljava/lang/String;)Ljava/lang/String;") \
- //METHOD (setCurrentThreadPriority, "setCurrentThreadPriority", "(I)I") \
+ /* METHOD (setCurrentThreadPriority, "setCurrentThreadPriority", "(I)I") \ */
  METHOD (hasSystemFeature,         "hasSystemFeature", "(Ljava/lang/String;)Z" ) \
- //METHOD (createNewThread,          "createNewThread", "(JLjava/lang/String;J)Ljava/lang/Thread;") \
+ /* METHOD (createNewThread,          "createNewThread", "(JLjava/lang/String;J)Ljava/lang/Thread;") \ */
  METHOD (requestRuntimePermission, "requestRuntimePermission", "(IJ)V" ) \
  METHOD (isPermissionGranted,     "isPermissionGranted", "(I)Z" ) \
  METHOD (isPermissionDeclaredInManifest, "isPermissionDeclaredInManifest", "(I)Z" ) \

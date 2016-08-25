@@ -49,14 +49,14 @@
                                    .setScanMode (ScanSettings.SCAN_MODE_LOW_POWER)
                                    .setScanMode (ScanSettings.MATCH_MODE_STICKY);
 
-                bluetoothLeScanner.startScan (Arrays.asList (scanFilterBuilder.build()),
-                                              scanSettingsBuilder.build(),
-                                              this);
-            }
+            bluetoothLeScanner.startScan (Arrays.asList (scanFilterBuilder.build()),
+                                          scanSettingsBuilder.build(),
+                                          this);
+        }
             else
-            {
+        {
                 bluetoothLeScanner.stopScan (this);
-            }
+        }
         }
 
         public boolean pairBluetoothMidiDevice(String address)
@@ -70,7 +70,7 @@
             }
 
             return getAndroidMidiDeviceManager().pairBluetoothDevice (btDevice);
-        }
+            }
 
         public void unpairBluetoothMidiDevice (String address)
         {
@@ -149,7 +149,7 @@
             if (owner != null && androidPort != null && ! isConnected) {
                 androidPort.connect(this);
                 isConnected = true;
-            }
+        }
         }
 
         @Override
@@ -158,7 +158,7 @@
             if (owner != null && androidPort != null && isConnected) {
                 androidPort.disconnect(this);
                 isConnected = false;
-            }
+        }
         }
 
         @Override
@@ -169,7 +169,7 @@
                     androidPort.close();
                 } catch (IOException exception) {
                     Log.d("JUCE", "IO Exception while closing port");
-                }
+            }
             }
 
             if (owner != null)
@@ -177,7 +177,7 @@
 
             owner = null;
             androidPort = null;
-        }
+            }
 
         @Override
         public void onSend (byte[] msg, int offset, int count, long timestamp)
@@ -242,10 +242,10 @@
                 try {
                     androidPort.send(msg, offset, count);
                 } catch (IOException exception)
-                {
+            {
                     Log.d ("JUCE", "send midi had IO exception");
-                }
             }
+        }
         }
 
         @Override
@@ -256,7 +256,7 @@
                     androidPort.close();
                 } catch (IOException exception) {
                     Log.d("JUCE", "IO Exception while closing port");
-                }
+            }
             }
 
             if (owner != null)
@@ -264,12 +264,12 @@
 
             owner = null;
             androidPort = null;
-        }
+            }
 
         MidiDeviceManager owner;
         MidiInputPort androidPort;
         MidiPortPath portPath;
-    }
+        }
 
     private static class MidiPortPath extends Object
     {
@@ -303,7 +303,7 @@
 
             MidiPortPath other = (MidiPortPath) obj;
             return (portIndex == other.portIndex && isInput == other.isInput && deviceId == other.deviceId);
-        }
+    }
     }
 
     //==============================================================================
@@ -337,7 +337,7 @@
             public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {}
 
             private MidiDeviceManager owner;
-        }
+            }
 
         //==============================================================================
         private class MidiDeviceOpenTask extends java.util.TimerTask
@@ -347,53 +347,53 @@
                 owner = deviceManager;
                 midiDevice = device;
                 btGatt = gattToUse;
-            }
+        }
 
             @Override
             public boolean cancel()
-            {
+        {
                 synchronized (MidiDeviceOpenTask.class)
                 {
                     owner = null;
                     boolean retval = super.cancel();
 
                     if (btGatt != null)
-                    {
+            {
                         btGatt.disconnect();
                         btGatt.close();
 
                         btGatt = null;
-                    }
+            }
 
                     if (midiDevice != null)
-                    {
+            {
                         try
-                        {
+                {
                             midiDevice.close();
-                        }
+                }
                         catch (IOException e)
                         {}
 
                         midiDevice = null;
-                    }
+            }
 
                     return retval;
-                }
+        }
             }
 
             public String getBluetoothAddress()
-            {
+        {
                 synchronized (MidiDeviceOpenTask.class)
-                {
+            {
                     if (midiDevice != null)
-                    {
+                {
                         MidiDeviceInfo info = midiDevice.getInfo();
                         if (info.getType() == MidiDeviceInfo.TYPE_BLUETOOTH)
-                        {
+                    {
                             BluetoothDevice btDevice = (BluetoothDevice) info.getProperties().get (info.PROPERTY_BLUETOOTH_DEVICE);
                             if (btDevice != null)
                                 return btDevice.getAddress();
-                        }
+                    }
                     }
                 }
 
@@ -409,22 +409,22 @@
 
             @Override
             public void run()
-            {
-                synchronized (MidiDeviceOpenTask.class)
                 {
+                synchronized (MidiDeviceOpenTask.class)
+                    {
                     if (owner != null && midiDevice != null)
                         owner.onDeviceOpenedDelayed (midiDevice);
-                }
-            }
+                    }
+                    }
 
             private MidiDeviceManager owner;
             private MidiDevice midiDevice;
             private BluetoothGatt btGatt;
-        }
+                }
 
         //==============================================================================
         public MidiDeviceManager()
-        {
+            {
             manager = (MidiManager) getSystemService (MIDI_SERVICE);
 
             if (manager == null)
@@ -465,7 +465,7 @@
             openPorts = null;
 
             for (Pair<MidiDevice, BluetoothGatt> device : midiDevices)
-            {
+                {
                 if (device.second != null)
                 {
                     device.second.disconnect();
@@ -496,7 +496,7 @@
             synchronized (MidiDeviceManager.class)
             {
                 deviceInfos = getDeviceInfos();
-            }
+        }
 
             ArrayList<String> portNames = new ArrayList<String>();
 
@@ -516,7 +516,7 @@
                 MidiPortPath portInfo = getPortPathForJuceIndex (portTypeToFind, index);
 
                 if (portInfo != null)
-                {
+            {
                     // ports must be opened exclusively!
                     if (openPorts.containsKey (portInfo))
                         return null;
@@ -524,45 +524,45 @@
                     Pair<MidiDevice,BluetoothGatt> devicePair = getMidiDevicePairForId (portInfo.deviceId);
 
                     if (devicePair != null)
-                    {
+        {
                         MidiDevice device = devicePair.first;
                         if (device != null)
                         {
                             JuceMidiPort juceMidiPort = null;
 
                             if (isInput)
-                            {
+        {
                                 MidiOutputPort outputPort = device.openOutputPort(portInfo.portIndex);
 
                                 if (outputPort != null)
                                     juceMidiPort = new JuceMidiInputPort(this, outputPort, portInfo, host);
                             }
                             else
-                            {
+            {
                                 MidiInputPort inputPort = device.openInputPort(portInfo.portIndex);
 
                                 if (inputPort != null)
                                     juceMidiPort = new JuceMidiOutputPort(this, inputPort, portInfo);
-                            }
+                    }
 
                             if (juceMidiPort != null)
-                            {
+                    {
                                 openPorts.put(portInfo, new WeakReference<JuceMidiPort>(juceMidiPort));
 
                                 return juceMidiPort;
-                            }
-                        }
                     }
                 }
+            }
+        }
             }
 
             return null;
         }
 
         public JuceMidiPort openMidiInputPortWithJuceIndex (int index, long host)
-        {
+            {
             return openMidiPortWithJuceIndex (index, host, true);
-        }
+            }
 
         public JuceMidiPort openMidiOutputPortWithJuceIndex (int index)
         {
@@ -584,11 +584,11 @@
 
                     if (findOpenTaskForBluetoothAddress (address) != null)
                         return 2;
-                }
+            }
             }
 
             return 0;
-        }
+            }
 
         public boolean pairBluetoothDevice (BluetoothDevice btDevice)
         {
@@ -609,8 +609,8 @@
                 {
                     btDevicesPairing.put (btDevice.getAddress(), gatt);
                 }
-                else
-                {
+            else
+            {
                     pairBluetoothDeviceStepTwo (btDevice);
                 }
             }
@@ -644,15 +644,15 @@
 
                 MidiDeviceOpenTask openTask = findOpenTaskForBluetoothAddress (address);
                 if (openTask != null)
-                {
+                    {
                     int deviceID = openTask.getID();
                     openTask.cancel();
                     openTasks.remove (deviceID);
-                }
+                    }
 
                 Pair<MidiDevice, BluetoothGatt> midiDevicePair = findMidiDeviceForBluetoothAddress (address);
                 if (midiDevicePair != null)
-                {
+            {
                     MidiDevice midiDevice = midiDevicePair.first;
                     onDeviceRemoved (midiDevice.getInfo());
 
@@ -677,37 +677,36 @@
                     BluetoothDevice btDevice = (BluetoothDevice) info.getProperties().get (info.PROPERTY_BLUETOOTH_DEVICE);
                     if (btDevice != null && btDevice.getAddress().equals (address))
                         return midiDevice;
-                }
+        }
             }
 
             return null;
-        }
+    }
 
         private MidiDeviceOpenTask findOpenTaskForBluetoothAddress (String address)
-        {
+    {
             for (Integer deviceID : openTasks.keySet())
-            {
+        {
                 MidiDeviceOpenTask openTask = openTasks.get (deviceID);
                 if (openTask.getBluetoothAddress().equals (address))
                     return openTask;
-            }
+        }
 
             return null;
         }
 
         public void removePort (MidiPortPath path)
-        {
+            {
             openPorts.remove (path);
-        }
+                }
 
         public String getInputPortNameForJuceIndex (int index)
         {
-            MidiPortPath portInfo = getPortPathForJuceIndex (MidiDeviceInfo.PortInfo.TYPE_OUTPUT, index);
-            if (portInfo != null)
-                return getPortName (portInfo);
+            physicalMidiDevices = new ArrayList<PhysicalMidiDevice>();
+            manager = (MidiManager) ((Activity) activityContext).getSystemService (Activity.MIDI_SERVICE);
 
             return "";
-        }
+            }
 
         public String getOutputPortNameForJuceIndex (int index)
         {
@@ -751,19 +750,19 @@
                                 openPorts.get(key).get().close();
                                 removedPort = true;
                                 break;
-                            }
-                        }
-                    }
-
-                    if (gatt != null)
-                    {
-                        gatt.disconnect();
-                        gatt.close();
-                    }
-
-                    midiDevices.remove (devicePair);
                 }
             }
+        }
+
+                    if (gatt != null)
+        {
+                        gatt.disconnect();
+                        gatt.close();
+            }
+
+                    midiDevices.remove (devicePair);
+        }
+        }
         }
 
         public void onDeviceStatusChanged (MidiDeviceStatus status)
@@ -808,11 +807,11 @@
                                         {
                                             gatt.disconnect();
                                             gatt.close();
-                                        }
-                                    }
+                    }
+                }
 
                                     theDevice.close();
-                                }
+            }
                                 catch (IOException e)
                                 {}
 
@@ -830,7 +829,7 @@
         }
 
         public void onDeviceOpenedDelayed (MidiDevice theDevice)
-        {
+            {
             synchronized (MidiDeviceManager.class)
             {
                 int deviceID = theDevice.getInfo().getId();
@@ -842,10 +841,10 @@
                         BluetoothGatt gatt = openTasks.get (deviceID).getGatt();
                         openTasks.remove (deviceID);
                         midiDevices.add (new Pair<MidiDevice,BluetoothGatt> (theDevice, gatt));
-                    }
+            }
                 }
-                else
-                {
+            else
+            {
                     // unpair was called in the mean time
                     MidiDeviceInfo info = theDevice.getInfo();
                     BluetoothDevice btDevice = (BluetoothDevice) info.getProperties().get (info.PROPERTY_BLUETOOTH_DEVICE);
@@ -861,14 +860,14 @@
                             {
                                 gatt.disconnect();
                                 gatt.close();
-                            }
+        }
                         }
                     }
 
                     try
-                    {
+        {
                         theDevice.close();
-                    }
+        }
                     catch (IOException e)
                     {}
                 }
@@ -899,14 +898,14 @@
                                         portName = (String) info.getProperties().get(info.PROPERTY_NAME);
 
                                     return portName;
-                                }
+        }
                             }
                         }
                     }
                 }
             }
 
-            return "";
+                return "";
         }
 
         public MidiPortPath getPortPathForJuceIndex (int portType, int juceIndex)
@@ -942,7 +941,7 @@
                     infos[idx++] = midiDevice.first.getInfo();
 
                 return infos;
-            }
+        }
         }
 
         private Pair<MidiDevice, BluetoothGatt> getMidiDevicePairForId (int deviceId)
@@ -952,7 +951,7 @@
                 for (Pair<MidiDevice,BluetoothGatt> midiDevice : midiDevices)
                     if (midiDevice.first.getInfo().getId() == deviceId)
                         return midiDevice;
-            }
+                }
 
             return null;
         }
@@ -967,7 +966,7 @@
 
     public MidiDeviceManager getAndroidMidiDeviceManager()
     {
-        if (getSystemService (MIDI_SERVICE) == null)
+        if (((Activity) activityContext).getSystemService (Activity.MIDI_SERVICE) == null)
             return null;
 
         synchronized (JuceAppActivity.class)
@@ -989,7 +988,7 @@
         if (adapter.getBluetoothLeScanner() == null)
             return null;
 
-        synchronized (JuceAppActivity.class)
+        synchronized (JuceAppActivity.class) // TODO should this be JuceBridge.getActivityContext().class ?
         {
             if (bluetoothManager == null)
                 bluetoothManager = new BluetoothManager();
