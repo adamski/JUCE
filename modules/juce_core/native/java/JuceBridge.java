@@ -673,8 +673,8 @@ public class JuceBridge
     public void callAppLauncher()
     {
             if (!hasInitialised())
-            launchApp(activityContext.getApplicationInfo().publicSourceDir,
-                    activityContext.getApplicationInfo().dataDir);
+                launchApp(activityContext.getApplicationInfo().publicSourceDir,
+                        activityContext.getApplicationInfo().dataDir);
     }
 
     public void setRequestedOrientation (int requestedOrientation)
@@ -1010,7 +1010,7 @@ public class JuceBridge
     public final void launchURL (String url)
     {
             ((Activity) activityContext).startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        }
+    }
 
     public static final String getLocaleValue (boolean isRegion)
     {
