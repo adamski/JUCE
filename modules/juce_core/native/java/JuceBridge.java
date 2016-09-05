@@ -103,7 +103,7 @@ public class JuceBridge
         java.lang.reflect.Method getActionBarMethod = null;
         try
         {
-            getActionBarMethod = this.getClass().getMethod ("getActionBar");
+            getActionBarMethod = activityContext.getClass().getMethod ("getActionBar");
         }
         catch (SecurityException e)     { return; }
         catch (NoSuchMethodException e) { return; }
@@ -113,7 +113,7 @@ public class JuceBridge
         Object actionBar = null;
         try
         {
-            actionBar = getActionBarMethod.invoke (this);
+            actionBar = getActionBarMethod.invoke (activityContext);
         }
         catch (java.lang.IllegalArgumentException e) { return; }
         catch (java.lang.IllegalAccessException e) { return; }
@@ -407,9 +407,9 @@ public class JuceBridge
             ColorMatrix colorMatrix = new ColorMatrix();
 
             float[] colorTransform = { 0,    0,    1.0f, 0,    0,
-                    		       0,    1.0f, 0,    0,    0,
-				       1.0f, 0,    0,    0,    0,
-				       0,    0,    0,    1.0f, 0 };
+                    0,    1.0f, 0,    0,    0,
+                    1.0f, 0,    0,    0,    0,
+                    0,    0,    0,    1.0f, 0 };
 
             colorMatrix.set (colorTransform);
             paint.setColorFilter (new ColorMatrixColorFilter(colorMatrix));
@@ -419,7 +419,7 @@ public class JuceBridge
             try
             {
                 method = getClass().getMethod ("setLayerType", int.class, Paint.class);
-            }
+        }
             catch (SecurityException e)     {}
             catch (NoSuchMethodException e) {}
 
@@ -463,8 +463,8 @@ public class JuceBridge
         @Override
         public boolean onTouchEvent (MotionEvent event)
         {
-	    if (host == 0)
-		return false;
+            if (host == 0)
+                return false;
 
             int action = event.getAction();
             long time = event.getEventTime();
@@ -513,7 +513,7 @@ public class JuceBridge
         //==============================================================================
         private native void handleKeyDown (long host, int keycode, int textchar);
         private native void handleKeyUp (long host, int keycode, int textchar);
-	private native void handleBackButton (long host);
+        private native void handleBackButton (long host);
 
         public void showKeyboard (String type)
         {
@@ -563,8 +563,8 @@ public class JuceBridge
 
         @Override
         public boolean onKeyUp (int keyCode, KeyEvent event)
-        {            
-	    if (host == 0)
+        {
+            if (host == 0)
                 return false;
 
             handleKeyUp (host, keyCode, event.getUnicodeChar());
@@ -574,7 +574,7 @@ public class JuceBridge
         @Override
         public boolean onKeyMultiple (int keyCode, int count, KeyEvent event)
         {
-	    if (host == 0)
+            if (host == 0)
                 return false;
 
             if (keyCode != KeyEvent.KEYCODE_UNKNOWN || event.getAction() != KeyEvent.ACTION_MULTIPLE)
@@ -609,7 +609,7 @@ public class JuceBridge
         @Override
         protected void onSizeChanged (int w, int h, int oldw, int oldh)
         {
-	    if (host == 0)
+            if (host == 0)
                 return false;
 
             super.onSizeChanged (w, h, oldw, oldh);
@@ -656,10 +656,10 @@ public class JuceBridge
 	    catch (java.lang.reflect.InvocationTargetException e) {}
 	}
 
-	public boolean isVisible()                  { return getVisibility() == VISIBLE; }
-	public void setVisible (boolean b)          { setVisibility (b ? VISIBLE : INVISIBLE); }
+        public boolean isVisible()                  { return getVisibility() == VISIBLE; }
+        public void setVisible (boolean b)          { setVisibility (b ? VISIBLE : INVISIBLE); }
 
-	public boolean containsPoint (int x, int y)
+        public boolean containsPoint (int x, int y)
         {
             return true; //xxx needs to check overlapping views
         }
@@ -704,9 +704,15 @@ public class JuceBridge
 
     public JuceViewHolder createViewForComponent (String componentName, Context c)
     {
-        JuceViewHolder juceViewHolder = new JuceViewHolder(c);
-        juceViewHolderMap.put(componentName, juceViewHolder);
-        Log.d ("JuceBridge", "Added JuceViewHolder with key="+componentName);
+        JuceViewHolder juceViewHolder;
+        // Check if view exists in map before creating new
+        if ((juceViewHolder = juceViewHolderMap.get (componentName)) == null)
+        {
+            juceViewHolder = new JuceViewHolder(c);
+            Log.d("JuceBridge", "Type of context is "+c.getClass().getName());
+            juceViewHolderMap.put(componentName, juceViewHolder);
+            Log.d ("JuceBridge", "Added JuceViewHolder with key="+componentName);
+        }
         return juceViewHolder;
     }
 
@@ -722,12 +728,13 @@ public class JuceBridge
 
     public final ComponentPeerView createNewView (boolean opaque, long host, String componentName)
     {
-        ComponentPeerView v = new ComponentPeerView (activityContext, opaque, host);
+        ComponentPeerView v = null;
+        Log.d("JuceBridge", "Add view to JuceViewHolder with key="+componentName);
         JuceViewHolder juceView = juceViewHolderMap.get(componentName);
         if (juceView != null)
         {
+            v = new ComponentPeerView (juceView.getContext(), opaque, host);
             juceView.addView(v);
-            Log.d("JuceBridge", "Added view to JuceViewHolder with key=" + componentName);
         }
         else
         {
@@ -736,6 +743,7 @@ public class JuceBridge
             juceView = juceViewHolderMap.get(null);
             if (juceView != null)
             {
+                v = new ComponentPeerView (juceView.getContext(), opaque, host);
                 juceView.addView(v);
                 Log.d("JuceBridge", "Added view to JuceViewHolder with null key");
             }
@@ -779,20 +787,11 @@ public class JuceBridge
             group.removeView (view);
     }
 
-
-    // TODO: Move to activity?
     public void callAppLauncher()
     {
-	if(activityContext instanceof Activity)
-	{
-	    if (!hasInitialised())
-		launchApp(activityContext.getApplicationInfo().publicSourceDir,
-			activityContext.getApplicationInfo().dataDir);
-	}
-	else
-	{
-	    Log.d ("callAppLauncher", "JuceBridge.context not instance of Activity: "+activityContext.toString());
-	}
+            if (!hasInitialised())
+                launchApp(activityContext.getApplicationInfo().publicSourceDir,
+                        activityContext.getApplicationInfo().dataDir);
     }
 
     public void requestPermissionsCompat (String[] permissions, int requestCode)
@@ -852,9 +851,9 @@ public class JuceBridge
     public native void quitApp();
     public native void suspendApp();
     public native void resumeApp();
-    private native void setScreenSize (int screenWidth, int screenHeight, int dpi);
-    private native void appActivityResult (int requestCode, int resultCode, Intent data);
-    private native void appNewIntent (Intent intent);
+    public native void setScreenSize (int screenWidth, int screenHeight, int dpi);
+    public native void appActivityResult (int requestCode, int resultCode, Intent data);
+    public native void appNewIntent (Intent intent);
 
     //==============================================================================
     public final void excludeClipRegion (android.graphics.Canvas canvas, float left, float top, float right, float bottom)
@@ -1171,12 +1170,7 @@ public class JuceBridge
 
     public final void launchURL (String url)
     {
-        if(activityContext instanceof Activity) {
             ((Activity) activityContext).startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        }
-
-        else
-            Log.d("JuceBridge", "launchURL - Context not an instance of Activity");
     }
 
     public static final String getLocaleValue (boolean isRegion)
