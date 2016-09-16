@@ -633,7 +633,7 @@ public class JuceBridge
     public ComponentPeerView getPeerViewForComponent(String componentName)
     {
         return componentPeerViewMap.get (componentName);
-    }
+        }
 
     public ComponentPeerView getPeerViewForDefaultComponent()
     {
@@ -647,12 +647,12 @@ public class JuceBridge
         juceViewHolder.addView(v); // So the last created view becomes the default. TODO: make this optional
 
         return v;
-        }
+    }
 
     public JuceViewHolder getViewHolder()
-        {
+    {
         return juceViewHolder;
-            }
+        }
 
     public final void deleteView (ComponentPeerView view)
     {
