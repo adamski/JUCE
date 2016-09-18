@@ -262,7 +262,8 @@ extern AndroidSystem android;
 
 //==============================================================================
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
- METHOD (createNewView,          "createNewView",        "(ZJLjava/lang/String;)L" JUCE_ANDROID_BRIDGE_CLASSPATH "$ComponentPeerView;") \
+ METHOD (createNewView,          "createNewView",        "(ZJ)L" JUCE_ANDROID_BRIDGE_CLASSPATH "$ComponentPeerView;") \
+ METHOD (attachComponentToView,  "attachComponentToView","(L" JUCE_ANDROID_BRIDGE_CLASSPATH "$ComponentPeerView;Landroid/view/ViewGroup;)V") \
  METHOD (deleteView,             "deleteView",           "(L" JUCE_ANDROID_BRIDGE_CLASSPATH "$ComponentPeerView;)V") \
  METHOD (createNativeSurfaceView, "createNativeSurfaceView", "(J)L" JUCE_ANDROID_BRIDGE_CLASSPATH "$NativeSurfaceView;") \
  METHOD (postMessage,            "postMessage",          "(J)V") \
