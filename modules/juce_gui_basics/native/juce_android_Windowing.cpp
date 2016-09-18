@@ -128,7 +128,7 @@ class AndroidComponentPeer  : public ComponentPeer,
                               private Timer
 {
 public:
-    AndroidComponentPeer (Component& comp, const int windowStyleFlags)
+    AndroidComponentPeer (Component& comp, const int windowStyleFlags, void* viewToAttachTo)
         : ComponentPeer (comp, windowStyleFlags),
           usingAndroidGraphics (false),
           fullScreen (false),
@@ -138,11 +138,18 @@ public:
         // NB: must not put this in the initialiser list, as it invokes a callback,
         // which will fail if the peer is only half-constructed.
         DBG ("AndroidComponentPeer constructor: "+component.getName());
-        view = GlobalRef (android.bridge.callObjectMethod (JuceBridge.createNewView,
-                                                           (jboolean) component.isOpaque(),
-                                                           (jlong) this,
-                (jstring) javaString(component.getName())));
-
+        if (viewToAttachTo == nullptr)
+        {
+            DBG ("viewToAttachTo is null");
+            view = GlobalRef (android.bridge.callObjectMethod(JuceBridge.createNewView,
+                                                             (jboolean) component.isOpaque(),
+                                                             (jlong) this,
+                    (jstring) javaString(component.getName())));
+        }
+        else
+        {
+            view = GlobalRef ((jobject) viewToAttachTo);
+        }
 
         if (isFocused())
             handleFocusGain();
@@ -663,9 +670,9 @@ JUCE_VIEW_CALLBACK (void, handleKeyDown,    (JNIEnv* env, jobject view, jlong ho
 JUCE_VIEW_CALLBACK (void, handleKeyUp,      (JNIEnv* env, jobject view, jlong host, jint k, jint kc),                         handleKeyUpCallback ((int) k, (int) kc))
 
 //==============================================================================
-ComponentPeer* Component::createNewPeer (int styleFlags, void*)
+ComponentPeer* Component::createNewPeer (int styleFlags, void* windowToAttachTo)
 {
-    return new AndroidComponentPeer (*this, styleFlags);
+    return new AndroidComponentPeer (*this, styleFlags, (jobject) windowToAttachTo);
 }
 
 //==============================================================================
