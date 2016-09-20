@@ -138,16 +138,18 @@ public:
         // NB: must not put this in the initialiser list, as it invokes a callback,
         // which will fail if the peer is only half-constructed.
         DBG ("AndroidComponentPeer constructor: "+component.getName());
-            DBG ("viewToAttachTo is null, calling createNewView");
-            view = GlobalRef (android.bridge.callObjectMethod(JuceBridge.createNewView,
-                                                             (jboolean) component.isOpaque(),
-                                                             (jlong) this));
-        if (viewToAttachTo != nullptr)
-        {
-            DBG ("attaching component to view");
-            android.bridge.callVoidMethod(JuceBridge.attachComponentToView, (jobject) view.get(),
-                                                                              (jobject) viewToAttachTo);
-        }
+        DBG ("calling createNewView" );
+//        jobject viewToAttachRef = GlobalRef(viewToAttachTo);
+        if (viewToAttachTo == nullptr) DBG ("viewToAttachTo null");
+        view = GlobalRef (android.bridge.callObjectMethod (JuceBridge.createNewView,
+                                                          (jboolean) component.isOpaque(),
+                                                          (jlong) this,
+                                                          (jobject) viewToAttachTo));
+
+        if (view.get() == nullptr)
+            DBG ("view null!");
+        else
+            DBG ("got view.");
 
         if (isFocused())
             handleFocusGain();
