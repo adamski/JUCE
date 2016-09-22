@@ -455,15 +455,26 @@ public:
 
     void grabFocus() override
     {
+
+        DBG ("AndroidComponentPeer::grabFocus, host: " + String ((long) this));
+        if (view.get() == nullptr) DBG ("view is null!!!");
+
+        // Crashes here!
         view.callBooleanMethod (ComponentPeerView.requestFocus);
     }
 
     void handleFocusChangeCallback (bool hasFocus)
     {
-        if (hasFocus)
-            handleFocusGain();
-        else
-            handleFocusLoss();
+        DBG ("AndroidComponentPeer::handleFocusChangeCallback, host: " + String ((long) this));
+        if (view.get() == nullptr) DBG ("view is null!!!");
+
+        if (view.get() != nullptr) // TEMP Workaround for null view at this point.
+        {
+            if (hasFocus)
+                handleFocusGain();
+            else
+                handleFocusLoss();
+        }
     }
 
     static const char* getVirtualKeyboardType (TextInputTarget::VirtualKeyboardType type) noexcept
@@ -672,7 +683,11 @@ JUCE_VIEW_CALLBACK (void, handleKeyUp,      (JNIEnv* env, jobject view, jlong ho
 //==============================================================================
 ComponentPeer* Component::createNewPeer (int styleFlags, void* windowToAttachTo)
 {
-    return new AndroidComponentPeer (*this, styleFlags, (jobject) windowToAttachTo);
+    DBG ("AndroidComponentPeer::createNewPeer");
+    if (windowToAttachTo == nullptr)
+        DBG ("createNewPeer: windowToAttachTo null!!!");
+
+    return new AndroidComponentPeer (*this, styleFlags, windowToAttachTo);
 }
 
 //==============================================================================
