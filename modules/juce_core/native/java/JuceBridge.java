@@ -655,30 +655,17 @@ public class JuceBridge
 
     public final ComponentPeerView createNewView (boolean opaque, long host, String componentName)
     {
-        ComponentPeerView v = null;
-        Log.d("JuceBridge", "Add view to JuceViewHolder with key="+componentName);
-        JuceViewHolder juceView = juceViewHolderMap.get(componentName);
-        if (juceView != null)
-        {
-            v = new ComponentPeerView (juceView.getContext(), opaque, host);
-            juceView.addView(v);
-        }
-        else
-        {
-            Log.d("JuceBridge", "No JuceViewHolder found for key=" + componentName);
-            Log.d("JuceBridge", "Trying null key");
-            juceView = juceViewHolderMap.get(null);
-            if (juceView != null)
-            {
-                v = new ComponentPeerView (juceView.getContext(), opaque, host);
-                juceView.addView(v);
-                Log.d("JuceBridge", "Added view to JuceViewHolder with null key");
-            }
-            else
-            {
-                Log.d("JuceBridge", "No JuceViewHolder found for null key");
-            }
-        }
+
+        Log.d ("JuceBridge", "createNewView");
+        ViewGroup viewParent = viewToAttachTo == null ? juceViewHolder : viewToAttachTo;
+
+        ComponentPeerView v = new ComponentPeerView (viewParent.getContext(), opaque, host);
+
+        Log.d ("JuceBridge", "created ComponentPeerView");
+        viewParent.addView(v);
+
+        Log.d ("JuceBridge", "ComponentPeerView parent:" + v.getParent().toString());
+
         return v;
     }
     public final void deleteView (ComponentPeerView view)
