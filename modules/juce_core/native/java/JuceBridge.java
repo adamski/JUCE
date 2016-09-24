@@ -653,7 +653,7 @@ public class JuceBridge
         return juceViewHolder = new JuceViewHolder(c);
     }
 
-    public final ComponentPeerView createNewView (boolean opaque, long host, String componentName)
+    public final ComponentPeerView createNewView (boolean opaque, long host, ViewGroup viewToAttachTo)
     {
 
         Log.d ("JuceBridge", "createNewView");
