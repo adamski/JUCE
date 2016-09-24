@@ -139,7 +139,7 @@ public:
         // which will fail if the peer is only half-constructed.
         DBG ("AndroidComponentPeer constructor: "+component.getName());
         DBG ("calling createNewView" );
-//        jobject viewToAttachRef = GlobalRef(viewToAttachTo);
+
         if (viewToAttachTo == nullptr) DBG ("viewToAttachTo null");
         view = GlobalRef (android.bridge.callObjectMethod (JuceBridge.createNewView,
                                                           (jboolean) component.isOpaque(),
@@ -169,6 +169,7 @@ public:
 
                 void messageCallback() override
                 {
+                    DBG ("AndroidComponentPeer: about to delete view");
                     android.bridge.callVoidMethod (JuceBridge.deleteView, view.get());
                 }
 
@@ -468,13 +469,17 @@ public:
         DBG ("AndroidComponentPeer::handleFocusChangeCallback, host: " + String ((long) this));
         if (view.get() == nullptr) DBG ("view is null!!!");
 
-        if (view.get() != nullptr) // TEMP Workaround for null view at this point.
+        if (view.get() != nullptr) // Check if the view exists yet
         {
             if (hasFocus)
                 handleFocusGain();
             else
                 handleFocusLoss();
         }
+//        else
+//        {
+//
+//        }
     }
 
     static const char* getVirtualKeyboardType (TextInputTarget::VirtualKeyboardType type) noexcept
