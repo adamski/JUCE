@@ -52,6 +52,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env,
         if (! app->initialiseApp()) {
             DBG ("app->initialiseApp() returned false, calling shutdownApp...");
             exit (app->shutdownApp());
+        }
     }
     }
     else
