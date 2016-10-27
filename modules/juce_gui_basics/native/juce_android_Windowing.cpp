@@ -54,7 +54,6 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env,
             exit (app->shutdownApp());
         }
     }
-    }
     else
     {
         jassertfalse; // you must supply an application object for an android app!
