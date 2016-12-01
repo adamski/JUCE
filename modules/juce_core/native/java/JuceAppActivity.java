@@ -49,6 +49,7 @@ import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import java.lang.Runnable;
+import java.lang.reflect.*;
 import java.util.*;
 import java.io.*;
 import java.net.URL;
@@ -56,8 +57,6 @@ import java.net.HttpURLConnection;
 import android.media.AudioManager;
 import android.media.MediaScannerConnection;
 import android.media.MediaScannerConnection.MediaScannerConnectionClient;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.app.ActivityCompat;
 import android.Manifest;
 $$JuceAndroidMidiImports$$ // If you get an error here, you need to re-save your project with the Projucer!
 
@@ -114,7 +113,7 @@ public class JuceAppActivity   extends Activity
 
     public boolean isPermissionGranted (int permissionID)
     {
-        return ContextCompat.checkSelfPermission (this, getAndroidPermissionName (permissionID)) == PackageManager.PERMISSION_GRANTED;
+        return getApplicationContext().checkCallingOrSelfPermission (getAndroidPermissionName (permissionID)) == PackageManager.PERMISSION_GRANTED;
     }
 
     private Map<Integer, Long> permissionCallbackPtrMap;
@@ -123,11 +122,11 @@ public class JuceAppActivity   extends Activity
     {
         String permissionName = getAndroidPermissionName (permissionID);
 
-        if (ContextCompat.checkSelfPermission (this, permissionName) != PackageManager.PERMISSION_GRANTED)
+        if (getApplicationContext().checkCallingOrSelfPermission (permissionName) != PackageManager.PERMISSION_GRANTED)
         {
             // remember callbackPtr, request permissions, and let onRequestPermissionResult call callback asynchronously
             permissionCallbackPtrMap.put (permissionID, ptrToCallback);
-            ActivityCompat.requestPermissions (this, new String[]{permissionName}, permissionID);
+            requestPermissionsCompat (new String[]{permissionName}, permissionID);
         }
         else
         {
@@ -253,7 +252,7 @@ public class JuceAppActivity   extends Activity
     private void hideActionBar()
     {
         // get "getActionBar" method
-        java.lang.reflect.Method getActionBarMethod = null;
+        Method getActionBarMethod = null;
         try
         {
             getActionBarMethod = this.getClass().getMethod ("getActionBar");
@@ -274,7 +273,7 @@ public class JuceAppActivity   extends Activity
         if (actionBar == null) return;
 
         // get "hide" method
-        java.lang.reflect.Method actionBarHideMethod = null;
+        Method actionBarHideMethod = null;
         try
         {
             actionBarHideMethod = actionBar.getClass().getMethod ("hide");
@@ -287,6 +286,26 @@ public class JuceAppActivity   extends Activity
         try
         {
             actionBarHideMethod.invoke (actionBar);
+        }
+        catch (java.lang.IllegalArgumentException e) {}
+        catch (java.lang.IllegalAccessException e) {}
+        catch (java.lang.reflect.InvocationTargetException e) {}
+    }
+
+    void requestPermissionsCompat (String[] permissions, int requestCode)
+    {
+        Method requestPermissionsMethod = null;
+        try
+        {
+            requestPermissionsMethod = this.getClass().getMethod ("requestPermissions");
+        }
+        catch (SecurityException e)     { return; }
+        catch (NoSuchMethodException e) { return; }
+        if (requestPermissionsMethod == null) return;
+
+        try
+        {
+            requestPermissionsMethod.invoke (this, permissions, requestCode);
         }
         catch (java.lang.IllegalArgumentException e) {}
         catch (java.lang.IllegalAccessException e) {}
