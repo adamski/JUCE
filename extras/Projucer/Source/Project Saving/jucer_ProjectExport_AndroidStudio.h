@@ -114,7 +114,7 @@ public:
           gradleVersion (settings, Ids::gradleVersion, nullptr, "2.14.1"),
           androidPluginVersion (settings, Ids::androidPluginVersion, nullptr, "2.2.2"),
           gradleToolchain (settings, Ids::gradleToolchain, nullptr, "clang"),
-          buildToolsVersion (settings, Ids::buildToolsVersion, nullptr, "23.0.2"),
+          buildToolsVersion (settings, Ids::buildToolsVersion, nullptr, "25.0.1"),
           androidStudioExecutable (findAndroidStudioExecutable())
     {
         initialiseDependencyPathValues();
