@@ -173,7 +173,7 @@ namespace Ids
     DECLARE_ID (iosDevelopmentTeamID);
     DECLARE_ID (buildToolsVersion);
     DECLARE_ID (gradleVersion);
-    DECLARE_ID (gradleWrapperVersion);
+    DECLARE_ID (androidPluginVersion);
     DECLARE_ID (gradleToolchain);
     DECLARE_ID (gradleToolchainVersion);
     DECLARE_ID (linuxExtraPkgConfig);

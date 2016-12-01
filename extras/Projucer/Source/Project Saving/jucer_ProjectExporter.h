@@ -75,7 +75,6 @@ public:
     virtual bool isCodeBlocks() const    = 0;
     virtual bool isMakefile() const      = 0;
     virtual bool isAndroidStudio() const = 0;
-    virtual bool isAndroidAnt() const    = 0;
 
     // operating system targeted by exporter
     virtual bool isAndroid() const = 0;
@@ -411,6 +410,5 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ProjectExporter)
 };
-
 
 #endif   // JUCER_PROJECTEXPORTER_H_INCLUDED

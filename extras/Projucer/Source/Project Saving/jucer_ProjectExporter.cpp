@@ -29,9 +29,7 @@
 #include "jucer_ProjectExport_Make.h"
 #include "jucer_ProjectExport_MSVC.h"
 #include "jucer_ProjectExport_XCode.h"
-#include "jucer_ProjectExport_AndroidBase.h"
 #include "jucer_ProjectExport_AndroidStudio.h"
-#include "jucer_ProjectExport_AndroidAnt.h"
 #include "jucer_ProjectExport_CodeBlocks.h"
 
 //==============================================================================
@@ -56,7 +54,6 @@ Array<ProjectExporter::ExporterTypeInfo> ProjectExporter::getExporterTypes()
     addType (types, MSVCProjectExporterVC2005::getName(),        BinaryData::projectIconVisualStudio_png,   BinaryData::projectIconVisualStudio_pngSize);
     addType (types, MakefileProjectExporter::getNameLinux(),     BinaryData::projectIconLinuxMakefile_png,  BinaryData::projectIconLinuxMakefile_pngSize);
     addType (types, AndroidStudioProjectExporter::getName(),     BinaryData::projectIconAndroid_png,        BinaryData::projectIconAndroid_pngSize);
-    addType (types, AndroidAntProjectExporter::getName(),        BinaryData::projectIconAndroid_png,        BinaryData::projectIconAndroid_pngSize);
     addType (types, CodeBlocksProjectExporter::getNameWindows(), BinaryData::projectIconCodeblocks_png,     BinaryData::projectIconCodeblocks_pngSize);
     addType (types, CodeBlocksProjectExporter::getNameLinux(),   BinaryData::projectIconCodeblocks_png,     BinaryData::projectIconCodeblocks_pngSize);
 
@@ -79,9 +76,8 @@ ProjectExporter* ProjectExporter::createNewExporter (Project& project, const int
         case 7:     exp = new MSVCProjectExporterVC2005    (project, ValueTree (MSVCProjectExporterVC2005    ::getValueTreeTypeName())); break;
         case 8:     exp = new MakefileProjectExporter      (project, ValueTree (MakefileProjectExporter      ::getValueTreeTypeName())); break;
         case 9:     exp = new AndroidStudioProjectExporter (project, ValueTree (AndroidStudioProjectExporter ::getValueTreeTypeName())); break;
-        case 10:    exp = new AndroidAntProjectExporter    (project, ValueTree (AndroidAntProjectExporter    ::getValueTreeTypeName())); break;
-        case 11:    exp = new CodeBlocksProjectExporter    (project, ValueTree (CodeBlocksProjectExporter    ::getValueTreeTypeName (CodeBlocksProjectExporter::windowsTarget)), CodeBlocksProjectExporter::windowsTarget); break;
-        case 12:    exp = new CodeBlocksProjectExporter    (project, ValueTree (CodeBlocksProjectExporter    ::getValueTreeTypeName (CodeBlocksProjectExporter::linuxTarget)),   CodeBlocksProjectExporter::linuxTarget); break;
+        case 10:    exp = new CodeBlocksProjectExporter    (project, ValueTree (CodeBlocksProjectExporter    ::getValueTreeTypeName (CodeBlocksProjectExporter::windowsTarget)), CodeBlocksProjectExporter::windowsTarget); break;
+        case 11:    exp = new CodeBlocksProjectExporter    (project, ValueTree (CodeBlocksProjectExporter    ::getValueTreeTypeName (CodeBlocksProjectExporter::linuxTarget)),   CodeBlocksProjectExporter::linuxTarget); break;
         default:    jassertfalse; return 0;
     }
 
@@ -131,7 +127,6 @@ ProjectExporter* ProjectExporter::createExporter (Project& project, const ValueT
     if (exp == nullptr)    exp = XCodeProjectExporter         ::createForSettings (project, settings);
     if (exp == nullptr)    exp = MakefileProjectExporter      ::createForSettings (project, settings);
     if (exp == nullptr)    exp = AndroidStudioProjectExporter ::createForSettings (project, settings);
-    if (exp == nullptr)    exp = AndroidAntProjectExporter    ::createForSettings (project, settings);
     if (exp == nullptr)    exp = CodeBlocksProjectExporter    ::createForSettings (project, settings);
 
     jassert (exp != nullptr);
@@ -159,7 +154,6 @@ bool ProjectExporter::canProjectBeLaunched (Project* project)
             //MakefileProjectExporter::getValueTreeTypeName(),
            #endif
             AndroidStudioProjectExporter::getValueTreeTypeName(),
-
             nullptr
         };
 

@@ -22,18 +22,54 @@
   ==============================================================================
 */
 
-class AndroidStudioProjectExporter  : public AndroidProjectExporterBase
+class AndroidStudioProjectExporter  : public ProjectExporter
 {
 public:
     //==============================================================================
-    bool usesMMFiles() const override                    { return false; }
-    bool canCopeWithDuplicateFiles() override            { return false; }
+    bool isXcode() const override                { return false; }
+    bool isVisualStudio() const override         { return false; }
+    bool isCodeBlocks() const override           { return false; }
+    bool isMakefile() const override             { return false; }
+
+    bool isAndroid() const override              { return true; }
+    bool isWindows() const override              { return false; }
+    bool isLinux() const override                { return false; }
+    bool isOSX() const override                  { return false; }
+    bool isiOS() const override                  { return false; }
+
+    bool supportsVST() const override            { return false; }
+    bool supportsVST3() const override           { return false; }
+    bool supportsAAX() const override            { return false; }
+    bool supportsRTAS() const override           { return false; }
+    bool supportsAU()   const override           { return false; }
+    bool supportsAUv3() const override           { return false; }
+    bool supportsStandalone() const override     { return false;  }
+
+    bool usesMMFiles() const override                       { return false; }
+    bool canCopeWithDuplicateFiles() override               { return false; }
     bool supportsUserDefinedConfigurations() const override { return false; }
 
-    bool isAndroidStudio() const override                { return true; }
-    bool isAndroidAnt() const override                   { return false; }
+    bool isAndroidStudio() const override                   { return true; }
 
-    static const char* getName()                         { return "Android Studio"; }
+    //==============================================================================
+    void addPlatformSpecificSettingsForProjectType (const ProjectType&) override
+    {
+        // no-op.
+    }
+
+    //==============================================================================
+    void createExporterProperties (PropertyListBuilder& props) override
+    {
+        createBaseExporterProperties (props);
+        createToolchainExporterProperties (props);
+        createManifestExporterProperties (props);
+        createLibraryModuleExporterProperties (props);
+        createCodeSigningExporterProperties (props);
+        createOtherExporterProperties (props);
+    }
+
+
+    static const char* getName()                         { return "Android"; }
     static const char* getValueTreeTypeName()            { return "ANDROIDSTUDIO"; }
 
     static AndroidStudioProjectExporter* createForSettings (Project& project, const ValueTree& settings)
@@ -45,31 +81,57 @@ public:
     }
 
     //==============================================================================
-    CachedValue<String> gradleVersion, gradleWrapperVersion, gradleToolchain, buildToolsVersion;
+    CachedValue<String> androidScreenOrientation, androidActivityClass, androidActivitySubClassName,
+                        androidVersionCode, androidMinimumSDK, androidTheme,
+                        androidSharedLibraries, androidStaticLibraries;
+
+    CachedValue<bool>   androidInternetNeeded, androidMicNeeded, androidBluetoothNeeded;
+    CachedValue<String> androidOtherPermissions;
+
+    CachedValue<String> androidKeyStore, androidKeyStorePass, androidKeyAlias, androidKeyAliasPass;
+
+    CachedValue<String> gradleVersion, androidPluginVersion, gradleToolchain, buildToolsVersion;
 
     //==============================================================================
     AndroidStudioProjectExporter (Project& p, const ValueTree& t)
-        : AndroidProjectExporterBase (p, t),
+        : ProjectExporter (p, t),
+          androidScreenOrientation (settings, Ids::androidScreenOrientation, nullptr, "unspecified"),
+          androidActivityClass (settings, Ids::androidActivityClass, nullptr, createDefaultClassName()),
+          androidActivitySubClassName (settings, Ids::androidActivitySubClassName, nullptr),
+          androidVersionCode (settings, Ids::androidVersionCode, nullptr, "1"),
+          androidMinimumSDK (settings, Ids::androidMinimumSDK, nullptr, "23"),
+          androidTheme (settings, Ids::androidTheme, nullptr),
+          androidSharedLibraries (settings, Ids::androidSharedLibraries, nullptr, ""),
+          androidStaticLibraries (settings, Ids::androidStaticLibraries, nullptr, ""),
+          androidInternetNeeded (settings, Ids::androidInternetNeeded, nullptr, true),
+          androidMicNeeded (settings, Ids::microphonePermissionNeeded, nullptr, false),
+          androidBluetoothNeeded (settings, Ids::androidBluetoothNeeded, nullptr, true),
+          androidOtherPermissions (settings, Ids::androidOtherPermissions, nullptr),
+          androidKeyStore (settings, Ids::androidKeyStore, nullptr, "${user.home}/.android/debug.keystore"),
+          androidKeyStorePass (settings, Ids::androidKeyStorePass, nullptr, "android"),
+          androidKeyAlias (settings, Ids::androidKeyAlias, nullptr, "androiddebugkey"),
+          androidKeyAliasPass (settings, Ids::androidKeyAliasPass, nullptr, "android"),
           gradleVersion (settings, Ids::gradleVersion, nullptr, "2.14.1"),
-          gradleWrapperVersion (settings, Ids::gradleWrapperVersion, nullptr, "0.8.1"),
+          androidPluginVersion (settings, Ids::androidPluginVersion, nullptr, "2.2.2"),
           gradleToolchain (settings, Ids::gradleToolchain, nullptr, "clang"),
           buildToolsVersion (settings, Ids::buildToolsVersion, nullptr, "23.0.2"),
           androidStudioExecutable (findAndroidStudioExecutable())
     {
+        initialiseDependencyPathValues();
         name = getName();
 
         if (getTargetLocationString().isEmpty())
-            getTargetLocationValue() = getDefaultBuildsRootFolder() + "AndroidStudio";
+            getTargetLocationValue() = getDefaultBuildsRootFolder() + "Android";
     }
 
     //==============================================================================
-    void createToolchainExporterProperties (PropertyListBuilder& props) override
+    void createToolchainExporterProperties (PropertyListBuilder& props)
     {
         props.add (new TextWithDefaultPropertyComponent<String> (gradleVersion, "gradle version", 32),
-                   "The version of gradle that Android Studio should use to build this app");
+                   "The version of gradle that is used to build this app (2.14.1 is fine for JUCE)");
 
-        props.add (new TextWithDefaultPropertyComponent<String> (gradleWrapperVersion, "gradle-experimental wrapper version", 32),
-                   "The version of the gradle-experimental wrapper that Android Studio should use to build this app");
+        props.add (new TextWithDefaultPropertyComponent<String> (androidPluginVersion, "android plug-in version", 32),
+                   "The version of the android build plugin for gradle that is used to build this app");
 
         static const char* toolchains[] = { "clang", "gcc", nullptr };
 
@@ -77,12 +139,16 @@ public:
                    "The toolchain that gradle should invoke for NDK compilation (variable model.android.ndk.tooclhain in app/build.gradle)");
 
         props.add (new TextWithDefaultPropertyComponent<String> (buildToolsVersion, "Android build tools version", 32),
-                   "The Android build tools version that Android Studio should use to build this app");
+                   "The Android build tools version that should use to build this app");
     }
 
-    void createLibraryModuleExporterProperties (PropertyListBuilder&) override
+    void createLibraryModuleExporterProperties (PropertyListBuilder& props)
     {
-        // gradle cannot do native library modules as far as we know...
+        props.add (new TextPropertyComponent (androidStaticLibraries.getPropertyAsValue(), "Import static library modules", 8192, true),
+                   "Comma or whitespace delimited list of static libraries (.a) defined in NDK_MODULE_PATH.");
+
+        props.add (new TextPropertyComponent (androidSharedLibraries.getPropertyAsValue(), "Import shared library modules", 8192, true),
+                   "Comma or whitespace delimited list of shared libraries (.so) defined in NDK_MODULE_PATH.");
     }
 
     //==============================================================================
@@ -137,7 +203,10 @@ public:
         writeAndroidManifest (targetFolder);
         writeStringsXML      (targetFolder);
         writeAppIcons        (targetFolder);
-        createSourceSymlinks (targetFolder);
+
+        const File jniFolder (targetFolder.getChildFile ("app"));
+        writeApplicationMk (jniFolder.getChildFile ("Application.mk"));
+        writeAndroidMk (jniFolder.getChildFile ("Android.mk"));
     }
 
     void removeOldFiles (const File& targetFolder) const
@@ -314,6 +383,203 @@ private:
         return path.replace ("${user.home}", homeFolder)
                    .replace ("~", homeFolder);
     }
+
+    //==============================================================================
+    struct ShouldFileBeCompiledPredicate
+    {
+        bool operator() (const Project::Item& projectItem) const  { return projectItem.shouldBeCompiled(); }
+    };
+
+    //==============================================================================
+    void writeApplicationMk (const File& file) const
+    {
+        const String toolchain = gradleToolchain.get();
+        const bool isClang = (toolchain == "clang");
+
+        MemoryOutputStream mo;
+
+        mo << "# Automatically generated makefile, created by the Projucer" << newLine
+        << "# Don't edit this file! Your changes will be overwritten when you re-save the Projucer project!" << newLine
+        << newLine
+        << "APP_STL := " << (isClang ? "c++_static" :  "gnustl_static") << newLine
+        << "APP_CPPFLAGS += " << getCppFlags() << newLine
+        << "APP_PLATFORM := " << getAppPlatform() << newLine
+        << "NDK_TOOLCHAIN_VERSION := " << toolchain << newLine
+        << newLine
+        << "ifeq ($(NDK_DEBUG),1)" << newLine
+        << "    APP_ABI := " << getABIs<AndroidStudioBuildConfiguration> (true) << newLine
+        << "else" << newLine
+        << "    APP_ABI := " << getABIs<AndroidStudioBuildConfiguration> (false) << newLine
+        << "endif" << newLine;
+
+        overwriteFileIfDifferentOrThrow (file, mo);
+    }
+
+    void writeAndroidMk (const File& file) const
+    {
+        Array<RelativePath> files;
+
+        for (int i = 0; i < getAllGroups().size(); ++i)
+            findAllProjectItemsWithPredicate (getAllGroups().getReference(i), files, ShouldFileBeCompiledPredicate());
+
+        MemoryOutputStream mo;
+        writeAndroidMk (mo, files);
+
+        overwriteFileIfDifferentOrThrow (file, mo);
+    }
+
+    void writeAndroidMkVariableList (OutputStream& out, const String& variableName, const String& settingsValue) const
+    {
+        const StringArray separatedItems (getCommaOrWhitespaceSeparatedItems (settingsValue));
+
+        if (separatedItems.size() > 0)
+            out << newLine << variableName << " := " << separatedItems.joinIntoString (" ") << newLine;
+    }
+
+    void writeAndroidMk (OutputStream& out, const Array<RelativePath>& files) const
+    {
+        out << "# Automatically generated makefile, created by the Projucer" << newLine
+        << "# Don't edit this file! Your changes will be overwritten when you re-save the Projucer project!" << newLine
+        << newLine
+        << "LOCAL_PATH := $(call my-dir)" << newLine
+        << newLine
+        << "include $(CLEAR_VARS)" << newLine
+        << newLine
+        << "ifeq ($(TARGET_ARCH_ABI), armeabi-v7a)" << newLine
+        << "    LOCAL_ARM_MODE := arm" << newLine
+        << "endif" << newLine
+        << newLine
+        << "LOCAL_MODULE := juce_jni" << newLine
+        << "LOCAL_SRC_FILES := \\" << newLine;
+
+        for (int i = 0; i < files.size(); ++i)
+            out << "  " << (files.getReference(i).isAbsolute() ? "" : "../")
+            << escapeSpaces (files.getReference(i).toUnixStyle()) << "\\" << newLine;
+
+        writeAndroidMkVariableList (out, "LOCAL_STATIC_LIBRARIES", androidStaticLibraries);
+        writeAndroidMkVariableList (out, "LOCAL_SHARED_LIBRARIES", androidSharedLibraries);
+
+        out << newLine
+        << "ifeq ($(NDK_DEBUG),1)" << newLine;
+        writeConfigSettings (out, true);
+        out << "else" << newLine;
+        writeConfigSettings (out, false);
+        out << "endif" << newLine
+        << newLine
+        << "include $(BUILD_SHARED_LIBRARY)" << newLine;
+
+        StringArray importModules (getCommaOrWhitespaceSeparatedItems (androidStaticLibraries));
+        importModules.addArray (getCommaOrWhitespaceSeparatedItems (androidSharedLibraries));
+
+        for (int i = 0; i < importModules.size(); ++i)
+            out << "$(call import-module," << importModules[i] << ")" << newLine;
+    }
+
+    void writeConfigSettings (OutputStream& out, bool forDebug) const
+    {
+        for (ConstConfigIterator config (*this); config.next();)
+        {
+            if (config->isDebug() == forDebug)
+            {
+                const AndroidStudioBuildConfiguration& androidConfig = dynamic_cast<const AndroidStudioBuildConfiguration&> (*config);
+
+                String cppFlags;
+                cppFlags << createCPPFlags (androidConfig)
+                << (" " + replacePreprocessorTokens (androidConfig, getExtraCompilerFlagsString()).trim()).trimEnd()
+                << newLine
+                << getLDLIBS (androidConfig).trimEnd()
+                << newLine;
+
+                out << "  LOCAL_CPPFLAGS += " << cppFlags;
+                out << "  LOCAL_CFLAGS += " << cppFlags;
+                break;
+            }
+        }
+    }
+
+    String getLDLIBS (const AndroidStudioBuildConfiguration& config) const
+    {
+        const String toolchain = gradleToolchain.get();
+        const bool isClang = (toolchain == "clang");
+
+        return "  LOCAL_LDLIBS :=" + config.getGCCLibraryPathFlags()
+        + " -llog -lGLESv2 -landroid -lEGL"
+        + (isClang ? " -latomic" : "")
+        + getExternalLibraryFlags (config)
+        + " " + replacePreprocessorTokens (config, getExtraLinkerFlagsString());
+    }
+
+    String createIncludePathFlags (const AndroidStudioBuildConfiguration& config) const
+    {
+        String flags;
+        StringArray searchPaths (extraSearchPaths);
+        searchPaths.addArray (config.getHeaderSearchPaths());
+
+        searchPaths = getCleanedStringArray (searchPaths);
+
+        for (int i = 0; i < searchPaths.size(); ++i)
+        {
+            RelativePath searchPath =
+                RelativePath (searchPaths[i], RelativePath::buildTargetFolder)
+                    .rebased (getTargetFolder(), getTargetFolder().getChildFile ("app"), RelativePath::buildTargetFolder);
+
+            flags << " -I " << FileHelpers::unixStylePath (replacePreprocessorTokens (config, searchPath.toUnixStyle())).quoted();
+        }
+
+        return flags;
+    }
+
+    String createCPPFlags (const AndroidStudioBuildConfiguration& config) const
+    {
+        StringPairArray defines;
+        defines.set ("JUCE_ANDROID", "1");
+        defines.set ("JUCE_ANDROID_API_VERSION", androidMinimumSDK.get());
+        defines.set ("JUCE_ANDROID_ACTIVITY_CLASSNAME", getJNIActivityClassName().replaceCharacter ('/', '_'));
+        defines.set ("JUCE_ANDROID_ACTIVITY_CLASSPATH", "\\\"" + getJNIActivityClassName() + "\\\"");
+
+        String flags ("-fsigned-char -fexceptions -frtti");
+
+        if (config.isDebug())
+        {
+            flags << " -g";
+            defines.set ("DEBUG", "1");
+            defines.set ("_DEBUG", "1");
+        }
+        else
+        {
+            defines.set ("NDEBUG", "1");
+        }
+
+        flags << createIncludePathFlags (config)
+        << " -O" << config.getGCCOptimisationFlag();
+
+        flags << " -std=gnu++11";
+
+        defines = mergePreprocessorDefs (defines, getAllPreprocessorDefs (config));
+        return flags + createGCCPreprocessorFlags (defines);
+    }
+
+    //==============================================================================
+    String getCppFlags() const
+    {
+        const String toolchain = gradleToolchain.get();
+        String flags ("-fsigned-char -fexceptions -frtti");
+
+        if (! toolchain.startsWithIgnoreCase ("clang"))
+            flags << " -Wno-psabi";
+
+        return flags;
+    }
+
+    String getAppPlatform() const
+    {
+        int ndkVersion = androidMinimumSDK.get().getIntValue();
+        if (ndkVersion == 9)
+            ndkVersion = 10; // (doesn't seem to be a version '9')
+
+        return "android-" + String (ndkVersion);
+    }
+
 
     //==============================================================================
     struct GradleElement
@@ -495,8 +761,8 @@ private:
     {
         auto dependencies = new GradleObject ("dependencies");
 
-        dependencies->add<GradleStatement> ("classpath 'com.android.tools.build:gradle-experimental:"
-                                            + gradleWrapperVersion.get() + "'");
+        dependencies->add<GradleStatement> ("classpath 'com.android.tools.build:gradle:"
+                                            + androidPluginVersion.get() + "'");
         return dependencies;
     }
 
@@ -512,25 +778,11 @@ private:
     {
         String appBuildGradle;
 
-        appBuildGradle << "apply plugin: 'com.android.model.application'" << newLine;
-        appBuildGradle << getAndroidModel();
-        appBuildGradle << getAppDependencies();
+        appBuildGradle << "apply plugin: 'com.android.application'" << newLine;
+        appBuildGradle << getAndroidObject();
+        //        appBuildGradle << getAppDependencies();
 
         return appBuildGradle;
-    }
-
-    String getAndroidModel() const
-    {
-        GradleObject model ("model");
-
-        model.addChildObject (getAndroidObject());
-        model.addChildObject (getAndroidNdkSettings());
-        model.addChildObject (getAndroidSources());
-        model.addChildObject (getAndroidBuildConfigs());
-        model.addChildObject (getAndroidSigningConfigs());
-        model.addChildObject (getAndroidProductFlavours());
-
-        return model.toString();
     }
 
     String getAppDependencies() const
@@ -541,15 +793,16 @@ private:
     }
 
     //==============================================================================
-    GradleObject* getAndroidObject() const
+    String getAndroidObject() const
     {
-        auto android = new GradleObject ("android");
+        GradleObject android ("android");
 
-        android->add<GradleValue> ("compileSdkVersion", androidMinimumSDK.get().getIntValue());
-        android->add<GradleString> ("buildToolsVersion", buildToolsVersion.get());
-        android->addChildObject (getAndroidDefaultConfig());
+        android.add<GradleValue> ("compileSdkVersion", androidMinimumSDK.get().getIntValue());
+        android.add<GradleString> ("buildToolsVersion", buildToolsVersion.get());
+        android.addChildObject (getExternalNdkBuildObject());
+        android.addChildObject (getAndroidDefaultConfig());
 
-        return android;
+        return android.toString();
     }
 
     GradleObject* getAndroidDefaultConfig() const
@@ -559,13 +812,25 @@ private:
 
         auto defaultConfig = new GradleObject ("defaultConfig.with");
 
-        defaultConfig->add<GradleString> ("applicationId",             bundleIdentifier);
-        defaultConfig->add<GradleValue>  ("minSdkVersion.apiLevel",      minSdkVersion);
-        defaultConfig->add<GradleValue>  ("targetSdkVersion.apiLevel", minSdkVersion);
+        defaultConfig->add<GradleString> ("applicationId",    bundleIdentifier);
+        defaultConfig->add<GradleValue>  ("minSdkVersion",    minSdkVersion);
+        defaultConfig->add<GradleValue>  ("targetSdkVersion", minSdkVersion);
 
         return defaultConfig;
     }
 
+    GradleObject* getExternalNdkBuildObject() const
+    {
+        auto externalNdk = new GradleObject ("externalNativeBuild");
+        auto ndkBuild    = new GradleObject ("ndkBuild");
+
+        ndkBuild->add<GradleString> ("path", "Android.mk");
+        externalNdk->addChildObject (ndkBuild);
+
+        return externalNdk;
+    }
+
+#if 0
     GradleObject* getAndroidNdkSettings() const
     {
         const String toolchain = gradleToolchain.get();
@@ -657,6 +922,7 @@ private:
         for (const auto& lib : libs)
             ndk->add<GradleLinkLibrary> (lib);
     }
+#endif
 
     GradleObject* getAndroidSources() const
     {
@@ -836,7 +1102,372 @@ private:
     }
 
     //==============================================================================
+    //==============================================================================
+    void createBaseExporterProperties (PropertyListBuilder& props)
+    {
+        static const char* orientations[] = { "Portrait and Landscape", "Portrait", "Landscape", nullptr };
+        static const char* orientationValues[] = { "unspecified", "portrait", "landscape", nullptr };
+
+        props.add (new ChoicePropertyComponent (androidScreenOrientation.getPropertyAsValue(), "Screen orientation", StringArray (orientations), Array<var> (orientationValues)),
+                   "The screen orientations that this app should support");
+
+        props.add (new TextWithDefaultPropertyComponent<String> (androidActivityClass, "Android Activity class name", 256),
+                   "The full java class name to use for the app's Activity class.");
+
+        props.add (new TextPropertyComponent (androidActivitySubClassName.getPropertyAsValue(), "Android Activity sub-class name", 256, false),
+                   "If not empty, specifies the Android Activity class name stored in the app's manifest. "
+                   "Use this if you would like to use your own Android Activity sub-class.");
+
+        props.add (new TextWithDefaultPropertyComponent<String> (androidVersionCode, "Android Version Code", 32),
+                   "An integer value that represents the version of the application code, relative to other versions.");
+
+        props.add (new DependencyPathPropertyComponent (project.getFile().getParentDirectory(), sdkPath, "Android SDK Path"),
+                   "The path to the Android SDK folder on the target build machine");
+
+        props.add (new DependencyPathPropertyComponent (project.getFile().getParentDirectory(), ndkPath, "Android NDK Path"),
+                   "The path to the Android NDK folder on the target build machine");
+
+        props.add (new TextWithDefaultPropertyComponent<String> (androidMinimumSDK, "Minimum SDK version", 32),
+                   "The number of the minimum version of the Android SDK that the app requires");
+    }
+
+    //==============================================================================
+    void createManifestExporterProperties (PropertyListBuilder& props)
+    {
+        props.add (new BooleanPropertyComponent (androidInternetNeeded.getPropertyAsValue(), "Internet Access", "Specify internet access permission in the manifest"),
+                   "If enabled, this will set the android.permission.INTERNET flag in the manifest.");
+
+        props.add (new BooleanPropertyComponent (androidMicNeeded.getPropertyAsValue(), "Audio Input Required", "Specify audio record permission in the manifest"),
+                   "If enabled, this will set the android.permission.RECORD_AUDIO flag in the manifest.");
+
+        props.add (new BooleanPropertyComponent (androidBluetoothNeeded.getPropertyAsValue(), "Bluetooth permissions Required", "Specify bluetooth permission (required for Bluetooth MIDI)"),
+                   "If enabled, this will set the android.permission.BLUETOOTH and  android.permission.BLUETOOTH_ADMIN flag in the manifest. This is required for Bluetooth MIDI on Android.");
+
+        props.add (new TextPropertyComponent (androidOtherPermissions.getPropertyAsValue(), "Custom permissions", 2048, false),
+                   "A space-separated list of other permission flags that should be added to the manifest.");
+    }
+
+    //==============================================================================
+    void createCodeSigningExporterProperties (PropertyListBuilder& props)
+    {
+        props.add (new TextWithDefaultPropertyComponent<String> (androidKeyStore, "Key Signing: key.store", 2048),
+                   "The key.store value, used when signing the package.");
+
+        props.add (new TextWithDefaultPropertyComponent<String> (androidKeyStorePass, "Key Signing: key.store.password", 2048),
+                   "The key.store password, used when signing the package.");
+
+        props.add (new TextWithDefaultPropertyComponent<String> (androidKeyAlias, "Key Signing: key.alias", 2048),
+                   "The key.alias value, used when signing the package.");
+
+        props.add (new TextWithDefaultPropertyComponent<String> (androidKeyAliasPass, "Key Signing: key.alias.password", 2048),
+                   "The key.alias password, used when signing the package.");
+    }
+
+    //==============================================================================
+    void createOtherExporterProperties (PropertyListBuilder& props)
+    {
+        props.add (new TextPropertyComponent (androidTheme.getPropertyAsValue(), "Android Theme", 256, false),
+                   "E.g. @android:style/Theme.NoTitleBar or leave blank for default");
+    }
+
+    //==============================================================================
+    String createDefaultClassName() const
+    {
+        String s (project.getBundleIdentifier().toString().toLowerCase());
+
+        if (s.length() > 5
+            && s.containsChar ('.')
+            && s.containsOnly ("abcdefghijklmnopqrstuvwxyz_.")
+            && ! s.startsWithChar ('.'))
+        {
+            if (! s.endsWithChar ('.'))
+                s << ".";
+        }
+        else
+        {
+            s = "com.yourcompany.";
+        }
+
+        return s + CodeHelpers::makeValidIdentifier (project.getProjectFilenameRoot(), false, true, false);
+    }
+
+    void initialiseDependencyPathValues()
+    {
+        sdkPath.referTo (Value (new DependencyPathValueSource (getSetting (Ids::androidSDKPath),
+                                                               Ids::androidSDKPath, TargetOS::getThisOS())));
+
+        ndkPath.referTo (Value (new DependencyPathValueSource (getSetting (Ids::androidNDKPath),
+                                                               Ids::androidNDKPath, TargetOS::getThisOS())));
+    }
+
+    void copyActivityJavaFiles (const OwnedArray<LibraryModule>& modules, const File& targetFolder, const String& package) const
+    {
+        const String className (getActivityName());
+
+        if (className.isEmpty())
+            throw SaveError ("Invalid Android Activity class name: " + androidActivityClass.get());
+
+        createDirectoryOrThrow (targetFolder);
+
+        LibraryModule* const coreModule = getCoreModule (modules);
+
+        if (coreModule != nullptr)
+        {
+            File javaDestFile (targetFolder.getChildFile (className + ".java"));
+
+            File javaSourceFolder (coreModule->getFolder().getChildFile ("native")
+                                                          .getChildFile ("java"));
+
+            String juceMidiCode, juceMidiImports, juceRuntimePermissionsCode;
+
+            juceMidiImports << newLine;
+
+            if (androidMinimumSDK.get().getIntValue() >= 23)
+            {
+                File javaAndroidMidi (javaSourceFolder.getChildFile ("AndroidMidi.java"));
+                File javaRuntimePermissions (javaSourceFolder.getChildFile ("AndroidRuntimePermissions.java"));
+
+                juceMidiImports << "import android.media.midi.*;" << newLine
+                                << "import android.bluetooth.*;" << newLine
+                                << "import android.bluetooth.le.*;" << newLine;
+
+                juceMidiCode = javaAndroidMidi.loadFileAsString().replace ("JuceAppActivity", className);
+
+                juceRuntimePermissionsCode = javaRuntimePermissions.loadFileAsString().replace ("JuceAppActivity", className);
+            }
+            else
+            {
+                juceMidiCode = javaSourceFolder.getChildFile ("AndroidMidiFallback.java")
+                                   .loadFileAsString()
+                                   .replace ("JuceAppActivity", className);
+            }
+
+            File javaSourceFile (javaSourceFolder.getChildFile ("JuceAppActivity.java"));
+            StringArray javaSourceLines (StringArray::fromLines (javaSourceFile.loadFileAsString()));
+
+            {
+                MemoryOutputStream newFile;
+
+                for (int i = 0; i < javaSourceLines.size(); ++i)
+                {
+                    const String& line = javaSourceLines[i];
+
+                    if (line.contains ("$$JuceAndroidMidiImports$$"))
+                        newFile << juceMidiImports;
+                    else if (line.contains ("$$JuceAndroidMidiCode$$"))
+                        newFile << juceMidiCode;
+                    else if (line.contains ("$$JuceAndroidRuntimePermissionsCode$$"))
+                        newFile << juceRuntimePermissionsCode;
+                    else
+                        newFile << line.replace ("JuceAppActivity", className)
+                                       .replace ("package com.juce;", "package " + package + ";") << newLine;
+                }
+
+                javaSourceLines = StringArray::fromLines (newFile.toString());
+            }
+
+            while (javaSourceLines.size() > 2
+                    && javaSourceLines[javaSourceLines.size() - 1].trim().isEmpty()
+                    && javaSourceLines[javaSourceLines.size() - 2].trim().isEmpty())
+                javaSourceLines.remove (javaSourceLines.size() - 1);
+
+            overwriteFileIfDifferentOrThrow (javaDestFile, javaSourceLines.joinIntoString (newLine));
+        }
+    }
+
+    String getActivityName() const
+    {
+        return androidActivityClass.get().fromLastOccurrenceOf (".", false, false);
+    }
+
+    String getActivitySubClassName() const
+    {
+        String activityPath = androidActivitySubClassName.get();
+
+        return (activityPath.isEmpty()) ? getActivityName() : activityPath.fromLastOccurrenceOf (".", false, false);
+    }
+
+    String getActivityClassPackage() const
+    {
+        return androidActivityClass.get().upToLastOccurrenceOf (".", false, false);
+    }
+
+    String getJNIActivityClassName() const
+    {
+        return androidActivityClass.get().replaceCharacter ('.', '/');
+    }
+
+    static LibraryModule* getCoreModule (const OwnedArray<LibraryModule>& modules)
+    {
+        for (int i = modules.size(); --i >= 0;)
+            if (modules.getUnchecked(i)->getID() == "juce_core")
+                return modules.getUnchecked(i);
+
+        return nullptr;
+    }
+
+    StringArray getPermissionsRequired() const
+    {
+        StringArray s;
+        s.addTokens (androidOtherPermissions.get(), ", ", "");
+
+        if (androidInternetNeeded.get())
+            s.add ("android.permission.INTERNET");
+
+        if (androidMicNeeded.get())
+            s.add ("android.permission.RECORD_AUDIO");
+
+        if (androidBluetoothNeeded.get())
+        {
+            s.add ("android.permission.BLUETOOTH");
+            s.add ("android.permission.BLUETOOTH_ADMIN");
+            s.add ("android.permission.ACCESS_COARSE_LOCATION");
+        }
+
+        return getCleanedStringArray (s);
+    }
+
+    template <typename PredicateT>
+    void findAllProjectItemsWithPredicate (const Project::Item& projectItem, Array<RelativePath>& results, const PredicateT& predicate) const
+    {
+        if (projectItem.isGroup())
+        {
+            for (int i = 0; i < projectItem.getNumChildren(); ++i)
+                findAllProjectItemsWithPredicate (projectItem.getChild(i), results, predicate);
+        }
+        else
+        {
+            if (predicate (projectItem))
+                results.add (RelativePath (projectItem.getFile(), getTargetFolder(), RelativePath::buildTargetFolder));
+        }
+    }
+
+    void writeIcon (const File& file, const Image& im) const
+    {
+        if (im.isValid())
+        {
+            createDirectoryOrThrow (file.getParentDirectory());
+
+            PNGImageFormat png;
+            MemoryOutputStream mo;
+
+            if (! png.writeImageToStream (im, mo))
+                throw SaveError ("Can't generate Android icon file");
+
+            overwriteFileIfDifferentOrThrow (file, mo);
+        }
+    }
+
+    void writeIcons (const File& folder) const
+    {
+        ScopedPointer<Drawable> bigIcon (getBigIcon());
+        ScopedPointer<Drawable> smallIcon (getSmallIcon());
+
+        if (bigIcon != nullptr && smallIcon != nullptr)
+        {
+            const int step = jmax (bigIcon->getWidth(), bigIcon->getHeight()) / 8;
+            writeIcon (folder.getChildFile ("drawable-xhdpi/icon.png"), getBestIconForSize (step * 8, false));
+            writeIcon (folder.getChildFile ("drawable-hdpi/icon.png"),  getBestIconForSize (step * 6, false));
+            writeIcon (folder.getChildFile ("drawable-mdpi/icon.png"),  getBestIconForSize (step * 4, false));
+            writeIcon (folder.getChildFile ("drawable-ldpi/icon.png"),  getBestIconForSize (step * 3, false));
+        }
+        else if (Drawable* icon = bigIcon != nullptr ? bigIcon : smallIcon)
+        {
+            writeIcon (folder.getChildFile ("drawable-mdpi/icon.png"), rescaleImageForIcon (*icon, icon->getWidth()));
+        }
+    }
+
+    template <typename BuildConfigType>
+    String getABIs (bool forDebug) const
+    {
+        for (ConstConfigIterator config (*this); config.next();)
+        {
+            const BuildConfigType& androidConfig = dynamic_cast<const BuildConfigType&> (*config);
+
+            if (config->isDebug() == forDebug)
+                return androidConfig.getArchitectures();
+        }
+
+        return String();
+    }
+
+    //==============================================================================
+    XmlElement* createManifestXML() const
+    {
+        XmlElement* manifest = new XmlElement ("manifest");
+
+        manifest->setAttribute ("xmlns:android", "http://schemas.android.com/apk/res/android");
+        manifest->setAttribute ("android:versionCode", androidVersionCode.get());
+        manifest->setAttribute ("android:versionName",  project.getVersionString());
+        manifest->setAttribute ("package", getActivityClassPackage());
+
+        XmlElement* screens = manifest->createNewChildElement ("supports-screens");
+        screens->setAttribute ("android:smallScreens", "true");
+        screens->setAttribute ("android:normalScreens", "true");
+        screens->setAttribute ("android:largeScreens", "true");
+        //screens->setAttribute ("android:xlargeScreens", "true");
+        screens->setAttribute ("android:anyDensity", "true");
+
+        XmlElement* sdk = manifest->createNewChildElement ("uses-sdk");
+        sdk->setAttribute ("android:minSdkVersion", androidMinimumSDK.get());
+        sdk->setAttribute ("android:targetSdkVersion", androidMinimumSDK.get());
+
+        {
+            const StringArray permissions (getPermissionsRequired());
+
+            for (int i = permissions.size(); --i >= 0;)
+                manifest->createNewChildElement ("uses-permission")->setAttribute ("android:name", permissions[i]);
+        }
+
+        if (project.getModules().isModuleEnabled ("juce_opengl"))
+        {
+            XmlElement* feature = manifest->createNewChildElement ("uses-feature");
+            feature->setAttribute ("android:glEsVersion", "0x00020000");
+            feature->setAttribute ("android:required", "true");
+        }
+
+        XmlElement* app = manifest->createNewChildElement ("application");
+        app->setAttribute ("android:label", "@string/app_name");
+
+        if (androidTheme.get().isNotEmpty())
+            app->setAttribute ("android:theme", androidTheme.get());
+
+        {
+            ScopedPointer<Drawable> bigIcon (getBigIcon()), smallIcon (getSmallIcon());
+
+            if (bigIcon != nullptr || smallIcon != nullptr)
+                app->setAttribute ("android:icon", "@drawable/icon");
+        }
+
+        if (androidMinimumSDK.get().getIntValue() >= 11)
+            app->setAttribute ("android:hardwareAccelerated", "false"); // (using the 2D acceleration slows down openGL)
+
+        XmlElement* act = app->createNewChildElement ("activity");
+        act->setAttribute ("android:name", getActivitySubClassName());
+        act->setAttribute ("android:label", "@string/app_name");
+        act->setAttribute ("android:configChanges", "keyboardHidden|orientation|screenSize");
+        act->setAttribute ("android:screenOrientation", androidScreenOrientation.get());
+
+        XmlElement* intent = act->createNewChildElement ("intent-filter");
+        intent->createNewChildElement ("action")->setAttribute ("android:name", "android.intent.action.MAIN");
+        intent->createNewChildElement ("category")->setAttribute ("android:name", "android.intent.category.LAUNCHER");
+
+        return manifest;
+    }
+
+    //==============================================================================
+    Value sdkPath, ndkPath;
     const File androidStudioExecutable;
 
     JUCE_DECLARE_NON_COPYABLE (AndroidStudioProjectExporter)
 };
+
+ProjectExporter* createAndroidStudioExporter (Project& p, const ValueTree& t)
+{
+    return new AndroidStudioProjectExporter (p, t);
+}
+
+ProjectExporter* createAndroidStudioExporterForSetting (Project& p, const ValueTree& t)
+{
+    return AndroidStudioProjectExporter::createForSettings (p, t);
+}
