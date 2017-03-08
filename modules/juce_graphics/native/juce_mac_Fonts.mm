@@ -553,6 +553,10 @@ public:
         CGDataProviderRef provider = CGDataProviderCreateWithCFData (cfData);
         CFRelease (cfData);
 
+#if JUCE_IOS
+        [UIFont systemFontOfSize:12]; // http://www.openradar.me/18778790
+#endif
+        
         fontRef = CGFontCreateWithDataProvider (provider);
         CGDataProviderRelease (provider);
 

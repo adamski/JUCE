@@ -409,6 +409,7 @@ static bool isKioskModeView (JuceUIViewController* c)
 - (JuceUIView*) initWithOwner: (UIViewComponentPeer*) peer
                     withFrame: (CGRect) frame
 {
+    
     [super initWithFrame: frame];
     owner = peer;
 
@@ -819,6 +820,7 @@ static float getTouchForce (UITouch* touch) noexcept
 void UIViewComponentPeer::handleTouches (UIEvent* event, const bool isDown, const bool isUp, bool isCancel)
 {
     NSArray* touches = [[event touchesForView: view] allObjects];
+    DBG ("touches: " + String([touches count]));
 
     for (unsigned int i = 0; i < [touches count]; ++i)
     {
@@ -895,6 +897,7 @@ static UIViewComponentPeer* currentlyFocusedPeer = nullptr;
 
 void UIViewComponentPeer::viewFocusGain()
 {
+    DBG ("viewFocusGain");
     if (currentlyFocusedPeer != this)
     {
         if (ComponentPeer::isValidPeer (currentlyFocusedPeer))
@@ -932,6 +935,7 @@ void UIViewComponentPeer::grabFocus()
 
 void UIViewComponentPeer::textInputRequired (Point<int>, TextInputTarget&)
 {
+    DBG ("UIViewComponentPeer::textInputRequired");
 }
 
 static bool isIOS4_1() noexcept
@@ -985,9 +989,11 @@ BOOL UIViewComponentPeer::textViewReplaceCharacters (Range<int> range, const Str
 
 void UIViewComponentPeer::globalFocusChanged (Component*)
 {
+    DBG ("UIViewComponentPeer::globalFocusChanged");
     if (TextInputTarget* const target = findCurrentTextInputTarget())
     {
         Component* comp = dynamic_cast<Component*> (target);
+        DBG ("Target: " << comp->getName());
 
         Point<int> pos (component.getLocalPoint (comp, Point<int>()));
         view->hiddenTextView.frame = CGRectMake (pos.x, pos.y, 0, 0);

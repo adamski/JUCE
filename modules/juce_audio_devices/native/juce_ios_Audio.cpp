@@ -324,6 +324,8 @@ public:
         auto session = [AVAudioSession sharedInstance];
 
         const bool useInputs = (numInputChannels > 0 && audioInputIsAvailable);
+        
+        DBG ("JUCE: numInputChannels = " << numInputChannels);
 
         NSString* category = (useInputs ? AVAudioSessionCategoryPlayAndRecord : AVAudioSessionCategoryPlayback);
 

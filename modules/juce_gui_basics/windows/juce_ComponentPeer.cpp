@@ -279,12 +279,17 @@ void ComponentPeer::handleModifierKeysChange()
 TextInputTarget* ComponentPeer::findCurrentTextInputTarget()
 {
     Component* const c = Component::getCurrentlyFocusedComponent();
+    
+    if (c)
+        DBG ("ComponentPeer::findCurrentTextInputTarget: " + c->getName());
 
     if (c == &component || component.isParentOf (c))
         if (TextInputTarget* const ti = dynamic_cast<TextInputTarget*> (c))
+        {
+            DBG ("TextInputTarget ti");
             if (ti->isTextInputActive())
                 return ti;
-
+        }
     return nullptr;
 }
 
