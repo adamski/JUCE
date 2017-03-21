@@ -1171,42 +1171,48 @@ bool AudioProcessorGraph::isConnected (const uint32 possibleSourceNodeId,
     return false;
 }
 
-bool AudioProcessorGraph::canConnect (const uint32 sourceNodeId,
+Result AudioProcessorGraph::canConnect (const uint32 sourceNodeId,
                                       const int sourceChannelIndex,
                                       const uint32 destNodeId,
                                       const int destChannelIndex) const
 {
-    if (sourceChannelIndex < 0
-         || destChannelIndex < 0
-         || sourceNodeId == destNodeId
-         || (destChannelIndex == midiChannelIndex) != (sourceChannelIndex == midiChannelIndex))
-        return false;
-
+    if (sourceChannelIndex < 0) return Result::fail ("sourceChannelIndex < 0");
+    if (destChannelIndex < 0) return Result::fail ("destChannelIndex < 0");
+    if (sourceNodeId == destNodeId) return Result::fail ("sourceNodeId == destNodeId");
+    if ((destChannelIndex == midiChannelIndex) != (sourceChannelIndex == midiChannelIndex))
+        return Result::fail ("attempting to connect audio to midi or vice versa");
+    
     const Node* const source = getNodeForId (sourceNodeId);
 
-    if (source == nullptr
-         || (sourceChannelIndex != midiChannelIndex && sourceChannelIndex >= source->processor->getTotalNumOutputChannels())
-         || (sourceChannelIndex == midiChannelIndex && ! source->processor->producesMidi()))
-        return false;
+    if (source == nullptr) return Result::fail ("source == nullptr");
+    if (sourceChannelIndex != midiChannelIndex && sourceChannelIndex >= source->processor->getTotalNumOutputChannels())
+        return Result::fail ("sourceChannelIndex >= source->processor->getTotalNumOutputChannels()");
+    if (sourceChannelIndex == midiChannelIndex && ! source->processor->producesMidi())
+        return Result::fail ("sourceChannelIndex == midiChannelIndex && ! source->processor->producesMidi()");
 
     const Node* const dest = getNodeForId (destNodeId);
 
-    if (dest == nullptr
-         || (destChannelIndex != midiChannelIndex && destChannelIndex >= dest->processor->getTotalNumInputChannels())
-         || (destChannelIndex == midiChannelIndex && ! dest->processor->acceptsMidi()))
-        return false;
+    if (dest == nullptr) return Result::fail ("dest == nullptr");
+    if (destChannelIndex != midiChannelIndex && destChannelIndex >= dest->processor->getTotalNumInputChannels())
+        return Result::fail ("destChannelIndex >= dest->processor->getTotalNumInputChannels()");
+    if (destChannelIndex == midiChannelIndex && ! dest->processor->acceptsMidi())
+        return Result::fail ("destChannelIndex == midiChannelIndex && ! dest->processor->acceptsMidi()");
 
-    return getConnectionBetween (sourceNodeId, sourceChannelIndex,
-                                 destNodeId, destChannelIndex) == nullptr;
+    if (getConnectionBetween (sourceNodeId, sourceChannelIndex,
+                                 destNodeId, destChannelIndex) != nullptr)
+        return Result::fail ("connection already exists");
+    
+    return Result::ok();
 }
 
-bool AudioProcessorGraph::addConnection (const uint32 sourceNodeId,
+Result AudioProcessorGraph::addConnection (const uint32 sourceNodeId,
                                          const int sourceChannelIndex,
                                          const uint32 destNodeId,
                                          const int destChannelIndex)
 {
-    if (! canConnect (sourceNodeId, sourceChannelIndex, destNodeId, destChannelIndex))
-        return false;
+    Result result = canConnect (sourceNodeId, sourceChannelIndex, destNodeId, destChannelIndex);
+    if (result.failed())
+        return result;
 
     GraphRenderingOps::ConnectionSorter sorter;
     connections.addSorted (sorter, new Connection (sourceNodeId, sourceChannelIndex,
@@ -1215,7 +1221,7 @@ bool AudioProcessorGraph::addConnection (const uint32 sourceNodeId,
     if (isPrepared)
         triggerAsyncUpdate();
 
-    return true;
+    return result;
 }
 
 void AudioProcessorGraph::removeConnection (const int index)

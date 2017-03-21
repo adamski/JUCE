@@ -266,13 +266,13 @@ void ComponentPeer::handleModifierKeysChange()
     if (target == nullptr)
         target = &component;
 
-    target->internalModifierKeysChanged();
+        target->internalModifierKeysChanged();
 }
 
 TextInputTarget* ComponentPeer::findCurrentTextInputTarget()
 {
     auto* c = Component::getCurrentlyFocusedComponent();
-
+    
     if (c == &component || component.isParentOf (c))
         if (auto* ti = dynamic_cast<TextInputTarget*> (c))
             if (ti->isTextInputActive())
@@ -444,7 +444,7 @@ namespace DragHelpers
 
         return nullptr;
     }
-}
+            }
 
 bool ComponentPeer::handleDragMove (const ComponentPeer::DragInfo& info)
 {

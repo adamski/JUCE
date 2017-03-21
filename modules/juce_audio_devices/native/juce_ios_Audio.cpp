@@ -317,7 +317,7 @@ public:
         auto session = [AVAudioSession sharedInstance];
 
         const bool useInputs = (owner.numInputChannels > 0 && owner.audioInputIsAvailable);
-
+        
         NSString* category = (useInputs ? AVAudioSessionCategoryPlayAndRecord : AVAudioSessionCategoryPlayback);
 
         NSUInteger options = AVAudioSessionCategoryOptionMixWithOthers; // Alternatively AVAudioSessionCategoryOptionDuckOthers
@@ -620,8 +620,8 @@ public:
             {
                 owner.callback->audioDeviceStopped();
                 owner.callback->audioDeviceAboutToStart (&owner);
-            }
         }
+    }
     }
 
     void handleAudioUnitPropertyChange (AudioUnit,
@@ -1114,13 +1114,13 @@ void AudioSessionHolder::handleStatusChange (bool enabled, const char* reason) c
 {
     for (auto device: activeDevices)
         device->handleStatusChange (enabled, reason);
-}
+        }
 
 void AudioSessionHolder::handleRouteChange (const char* reason)
-{
+        {
     const ScopedLock sl (routeChangeLock);
     lastRouteChangeReason = reason;
     triggerAsyncUpdate();
-}
+        }
 
 #undef JUCE_NSERROR_CHECK

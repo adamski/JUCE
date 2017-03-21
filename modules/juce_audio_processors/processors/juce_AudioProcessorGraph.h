@@ -209,7 +209,7 @@ public:
                       uint32 possibleDestNodeId) const;
 
     /** Returns true if it would be legal to connect the specified points. */
-    bool canConnect (uint32 sourceNodeId, int sourceChannelIndex,
+    Result canConnect (uint32 sourceNodeId, int sourceChannelIndex,
                      uint32 destNodeId, int destChannelIndex) const;
 
     /** Attempts to connect two specified channels of two nodes.
@@ -217,7 +217,7 @@ public:
         If this isn't allowed (e.g. because you're trying to connect a midi channel
         to an audio one or other such nonsense), then it'll return false.
     */
-    bool addConnection (uint32 sourceNodeId, int sourceChannelIndex,
+    Result addConnection (uint32 sourceNodeId, int sourceChannelIndex,
                         uint32 destNodeId, int destChannelIndex);
 
     /** Deletes the connection with the specified index. */
@@ -370,6 +370,7 @@ public:
     void changeProgramName (int, const String&) override    { }
     void getStateInformation (juce::MemoryBlock&) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+    OwnedArray<Connection>& getConnections () { return connections; }
 
 private:
     //==============================================================================

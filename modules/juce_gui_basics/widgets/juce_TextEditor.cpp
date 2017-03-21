@@ -1707,6 +1707,7 @@ static void textEditorMenuCallback (int menuResult, TextEditor* editor)
 //==============================================================================
 void TextEditor::mouseDown (const MouseEvent& e)
 {
+    DBG ("TextEditor::mouseDown");
     beginDragAutoRepeat (100);
     newTransaction();
 
@@ -1714,6 +1715,10 @@ void TextEditor::mouseDown (const MouseEvent& e)
     {
         if (! (popupMenuEnabled && e.mods.isPopupMenu()))
         {
+            // DEBUG //
+            //TextInputTarget tit = this->findCurrentTextInputTarget();
+            
+            ///////////
             moveCaretTo (getTextIndexAt (e.x, e.y),
                          e.mods.isShiftDown());
         }

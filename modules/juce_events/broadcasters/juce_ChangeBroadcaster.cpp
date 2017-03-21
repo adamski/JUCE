@@ -60,7 +60,7 @@ void ChangeBroadcaster::sendChangeMessage()
 {
     if (changeListeners.size() > 0)
         broadcastCallback.triggerAsyncUpdate();
-}
+    }
 
 void ChangeBroadcaster::sendSynchronousChangeMessage()
 {
