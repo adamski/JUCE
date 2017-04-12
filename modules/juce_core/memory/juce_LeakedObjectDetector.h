@@ -104,6 +104,8 @@ private:
     }
 };
 
+
+
 //==============================================================================
 #if DOXYGEN || ! defined (JUCE_LEAK_DETECTOR)
  #if (DOXYGEN || JUCE_CHECK_MEMORY_LEAKS)
