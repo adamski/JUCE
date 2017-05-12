@@ -247,6 +247,19 @@ public:
         const ScopedLock sl (callbackLock);
         
         Array<double> rates;
+        
+//        DBG ("trySampleRate: " << owner.getCurrentSampleRate());
+//        const double currentSampleRate = trySampleRate (owner.getCurrentSampleRate());
+//        rates.addIfNotAlreadyThere (currentSampleRate);
+//        
+//        if (owner.getCurrentSampleRate() != currentSampleRate)
+//        {
+//            trySampleRate (currentSampleRate);
+//            DBG ("trySampleRate: " << currentSampleRate);
+//        }
+//
+//        return rates;
+        
 
         // Important: the supported audio sample rates change on the iPhone 6S
         // depending on whether the headphones are plugged in or not!
@@ -346,6 +359,8 @@ public:
 
         fixAudioRouteIfSetToReceiver();
 
+        setAudioSessionActive (false);
+        
         // Set the sample rate
         trySampleRate (targetSampleRate);
         owner.updateSampleRateAndAudioInput();
