@@ -236,6 +236,7 @@ public:
     static double trySampleRate (double rate)
     {
         auto session = [AVAudioSession sharedInstance];
+
         JUCE_NSERROR_CHECK ([session setPreferredSampleRate: rate
                                                       error: &error]);
         return session.sampleRate;
@@ -244,12 +245,12 @@ public:
     Array<double> getAvailableSampleRates()
     {
         const ScopedLock sl (callbackLock);
-
+        
         Array<double> rates;
 
         // Important: the supported audio sample rates change on the iPhone 6S
         // depending on whether the headphones are plugged in or not!
-        setAudioSessionActive (true);
+        setAudioSessionActive (false);
 
         AudioUnitRemovePropertyListenerWithUserData (audioUnit,
                                                      kAudioUnitProperty_StreamFormat,
@@ -268,10 +269,25 @@ public:
 
             rate = jmax (rate, supportedRate);
         }
-
+        //setAudioSessionActive (true);
+        
+        DBG ("trySampleRate: " << owner.getCurrentSampleRate());
         trySampleRate (owner.getCurrentSampleRate());
-        updateCurrentBufferSize();
+        
+//        double sampleRate;
+//        size_t size = sizeof(sampleRate);
+//        OSStatus err = AudioSessionGetProperty (kAudioSessionProperty_CurrentHardwareSampleRate,
+//                                       &size, &sampleRate);
+//        
+//        //sampleRate = [[AVAudioSession sharedInstance] currentHardwareSampleRate];
+//        
+//        DBG ("Current sample rate: " << sampleRate);
+//        trySampleRate (sampleRate);
 
+        updateCurrentBufferSize();
+        
+        setAudioSessionActive (true);
+        
         AudioUnitAddPropertyListener (audioUnit,
                                       kAudioUnitProperty_StreamFormat,
                                       handleStreamFormatChangeCallback,
@@ -341,7 +357,7 @@ public:
         handleRouteChange ("Started AudioUnit");
 
         owner.lastError = (audioUnit != 0 ? "" : "Couldn't open the device");
-
+     
         setAudioSessionActive (true);
 
         return owner.lastError;
@@ -603,25 +619,32 @@ public:
         if (owner.isRunning)
         {
             invokeAudioDeviceErrorCallback (reason);
+
             owner.updateSampleRateAndAudioInput();
+
             updateCurrentBufferSize();
+
             createAudioUnit();
 
             setAudioSessionActive (true);
-
+            
             if (audioUnit != 0)
             {
                 UInt32 formatSize = sizeof (format);
                 AudioUnitGetProperty (audioUnit, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Output, 1, &format, &formatSize);
                 AudioOutputUnitStart (audioUnit);
             }
-
+            
             if (owner.callback != nullptr)
             {
                 owner.callback->audioDeviceStopped();
                 owner.callback->audioDeviceAboutToStart (&owner);
+            }
+
+
+
+
         }
-    }
     }
 
     void handleAudioUnitPropertyChange (AudioUnit,

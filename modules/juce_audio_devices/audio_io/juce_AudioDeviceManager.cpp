@@ -519,6 +519,7 @@ String AudioDeviceManager::setAudioDeviceSetup (const AudioDeviceSetup& newSetup
         currentDeviceType = currentAudioDevice->getTypeName();
 
         currentAudioDevice->start (callbackHandler);
+        
 
         currentSetup.sampleRate     = currentAudioDevice->getCurrentSampleRate();
         currentSetup.bufferSize     = currentAudioDevice->getCurrentBufferSizeSamples();
