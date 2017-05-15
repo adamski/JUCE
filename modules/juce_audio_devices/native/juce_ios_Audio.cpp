@@ -247,23 +247,14 @@ public:
         const ScopedLock sl (callbackLock);
         
         Array<double> rates;
-        
-//        DBG ("trySampleRate: " << owner.getCurrentSampleRate());
-//        const double currentSampleRate = trySampleRate (owner.getCurrentSampleRate());
-//        rates.addIfNotAlreadyThere (currentSampleRate);
-//        
-//        if (owner.getCurrentSampleRate() != currentSampleRate)
-//        {
-//            trySampleRate (currentSampleRate);
-//            DBG ("trySampleRate: " << currentSampleRate);
-//        }
-//
-//        return rates;
-        
 
         // Important: the supported audio sample rates change on the iPhone 6S
         // depending on whether the headphones are plugged in or not!
+#if JUCE_DEBUG
+        setAudioSessionActive (true);
+#else
         setAudioSessionActive (false);
+#endif
 
         AudioUnitRemovePropertyListenerWithUserData (audioUnit,
                                                      kAudioUnitProperty_StreamFormat,
@@ -282,20 +273,9 @@ public:
 
             rate = jmax (rate, supportedRate);
         }
-        //setAudioSessionActive (true);
         
         DBG ("trySampleRate: " << owner.getCurrentSampleRate());
         trySampleRate (owner.getCurrentSampleRate());
-        
-//        double sampleRate;
-//        size_t size = sizeof(sampleRate);
-//        OSStatus err = AudioSessionGetProperty (kAudioSessionProperty_CurrentHardwareSampleRate,
-//                                       &size, &sampleRate);
-//        
-//        //sampleRate = [[AVAudioSession sharedInstance] currentHardwareSampleRate];
-//        
-//        DBG ("Current sample rate: " << sampleRate);
-//        trySampleRate (sampleRate);
 
         updateCurrentBufferSize();
         
