@@ -48,6 +48,7 @@ public:
     bool usesMMFiles() const override                       { return false; }
     bool canCopeWithDuplicateFiles() override               { return false; }
     bool supportsUserDefinedConfigurations() const override { return true; }
+    const String getJuceClassPackage() const            { return "com.juce"; }
 
     bool supportsTargetType (ProjectType::Target::Type type) const override
     {
@@ -204,6 +205,7 @@ public:
     {
         auto targetFolder = getTargetFolder();
         auto appFolder = targetFolder.getChildFile (isLibrary() ? "lib" : "app");
+        auto juceFolder = targetFolder.getChildFile ("juce");
 
         removeOldFiles (targetFolder);
 
@@ -965,43 +967,67 @@ private:
     {
         if (auto* coreModule = getCoreModule (modules))
         {
-            auto package = getActivityClassPackage();
+            auto activityPackage = getActivityClassPackage();
+            auto jucePackage = getJuceClassPackage();
             auto targetFolder = getTargetFolder();
 
             auto inAppBillingPath = String ("com.android.vending.billing").replaceCharacter ('.', File::getSeparatorChar());
             auto javaSourceFolder = coreModule->getFolder().getChildFile ("native").getChildFile ("java");
             auto javaInAppBillingTarget = targetFolder.getChildFile ("app/src/main/java").getChildFile (inAppBillingPath);
             auto javaTarget = targetFolder.getChildFile ("app/src/main/java")
-                                          .getChildFile (package.replaceCharacter ('.', File::getSeparatorChar()));
+                                          .getChildFile (activityPackage.replaceCharacter ('.', File::getSeparatorChar()));
+            auto javaBridgeTarget = targetFolder.getChildFile ("app/src/main/java")
+                                          .getChildFile (jucePackage.replaceCharacter ('.', File::getSeparatorChar()));
             auto libTarget = targetFolder.getChildFile ("app/libs");
             libTarget.createDirectory();
 
-            copyActivityJavaFiles (javaSourceFolder, javaTarget, package);
-            copyServicesJavaFiles (javaSourceFolder, javaTarget, package);
-            copyProviderJavaFile  (javaSourceFolder, javaTarget, package);
+            copyActivityJavaFiles (javaSourceFolder, javaTarget, activityPackage);
+            copyBridgeJavaFiles  (javaSourceFolder, javaBridgeTarget, jucePackage);
+            copyServicesJavaFiles (javaSourceFolder, javaTarget, activityPackage); // TODO move to jucePackage?
+            copyProviderJavaFile  (javaSourceFolder, javaTarget, activityPackage); // TODO move to jucePackage?
             copyAdditionalJavaFiles (javaSourceFolder, javaInAppBillingTarget);
             copyAdditionalJavaLibs (libTarget);
         }
     }
-
+    
     void copyActivityJavaFiles (const File& javaSourceFolder, const File& targetFolder, const String& package) const
     {
         if (androidActivityClass.get().toString().contains ("_"))
             throw SaveError ("Your Android activity class name or path may not contain any underscores! Try a project name without underscores.");
-
+        
         auto className = getActivityName();
-
+        
         if (className.isEmpty())
             throw SaveError ("Invalid Android Activity class name: " + androidActivityClass.get().toString());
+        
+        createDirectoryOrThrow (targetFolder);
+        
+        auto javaDestFile = targetFolder.getChildFile (className + ".java");
+        
+        auto javaSourceFile = javaSourceFolder.getChildFile ("JuceAppActivity.java");
+        auto javaSourceLines = StringArray::fromLines (javaSourceFile.loadFileAsString());
 
+        while (javaSourceLines.size() > 2
+               && javaSourceLines[javaSourceLines.size() - 1].trim().isEmpty()
+               && javaSourceLines[javaSourceLines.size() - 2].trim().isEmpty())
+            javaSourceLines.remove (javaSourceLines.size() - 1);
+        
+        overwriteFileIfDifferentOrThrow (javaDestFile, javaSourceLines.joinIntoString (newLine));
+    }
+
+
+    void copyBridgeJavaFiles (const File& javaSourceFolder, const File& targetFolder, const String& package) const
+    {
         createDirectoryOrThrow (targetFolder);
 
-        auto javaDestFile = targetFolder.getChildFile (className + ".java");
-
+        auto javaBridgeDestFile = targetFolder.getChildFile ("JuceBridge.java");
+        auto javaViewHolderDestFile = targetFolder.getChildFile ("JuceViewHolder.java");
 
         String juceMidiCode, juceMidiImports, juceRuntimePermissionsCode;
 
-        juceMidiImports << newLine;
+        // TODO: don't merge all the files into one, now that Activity is seperated.
+        
+        juceMidiImports << newLine;-
 
         if (static_cast<int> (androidMinimumSDK.get()) >= 23)
         {
@@ -1068,7 +1094,7 @@ private:
             }
         }
 
-        auto javaSourceFile = javaSourceFolder.getChildFile ("JuceAppActivity.java");
+        auto javaSourceFile = javaSourceFolder.getChildFile ("JuceBridge.java");
         auto javaSourceLines = StringArray::fromLines (javaSourceFile.loadFileAsString());
 
         {
@@ -1102,7 +1128,7 @@ private:
                 && javaSourceLines[javaSourceLines.size() - 2].trim().isEmpty())
             javaSourceLines.remove (javaSourceLines.size() - 1);
 
-        overwriteFileIfDifferentOrThrow (javaDestFile, javaSourceLines.joinIntoString (newLine));
+        overwriteFileIfDifferentOrThrow (javaBridgeDestFile, javaSourceLines.joinIntoString (newLine));
     }
 
     void copyAdditionalJavaFiles (const File& sourceFolder, const File& targetFolder) const

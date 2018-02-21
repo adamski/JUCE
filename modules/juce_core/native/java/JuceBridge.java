@@ -769,7 +769,7 @@ public class JuceBridge
 	catch (java.lang.reflect.InvocationTargetException e) {}
     }
 
-    public void handleBackButton()
+    public void handleBackPressed()
     {
 	ComponentPeerView focusedView = getViewWithFocusOrDefaultView();
 

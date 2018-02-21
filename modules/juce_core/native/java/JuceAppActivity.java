@@ -23,7 +23,8 @@
 package com.juce;
 
 import android.app.Activity;
-import android.os.Bundle;
+import android.os.Bundle;	
+import android.content.res.Configuration;
 import android.media.AudioManager;
 import com.juce.JuceBridge;
 
@@ -83,13 +84,13 @@ public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
     {
         super.onConfigurationChanged (cfg);
         //setContentView (viewHolder); // TODO
-}
+    }
 
     // Need to override this as the default implementation always finishes the activity.
     @Override
     public void onBackPressed()
     {
-	juceBridge.handleBackPressed();
+        juceBridge.handleBackPressed();
     }
 
 }
