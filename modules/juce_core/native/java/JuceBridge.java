@@ -291,7 +291,9 @@ public class JuceBridge
         switch (permissionID)
         {
             case JUCE_PERMISSIONS_RECORD_AUDIO:     return Manifest.permission.RECORD_AUDIO;
-            case JUCE_PERMISSIONS_BLUETOOTH_MIDI:   return Manifest.permission.ACCESS_COARSE_LOCATION;
+            case JUCE_PERMISSIONS_BLUETOOTH_MIDI:   return Manifest.permission.ACCESS_COARSE_LOCATION;                                                          // use string value as this is not defined in SDKs < 16
+            case JUCE_PERMISSIONS_READ_EXTERNAL_STORAGE:  return "android.permission.READ_EXTERNAL_STORAGE";
+            case JUCE_PERMISSIONS_WRITE_EXTERNAL_STORAGE: return Manifest.permission.WRITE_EXTERNAL_STORAGE;
         }
 
         // unknown permission ID!
@@ -602,6 +604,7 @@ public class JuceBridge
         }
 
         //==============================================================================
+	// TODO: These look like Activity overrides; move to JuceAppActivity and create handle methods
         @Override
         protected void onSizeChanged (int w, int h, int oldw, int oldh)
         {
@@ -766,6 +769,15 @@ public class JuceBridge
 	catch (java.lang.reflect.InvocationTargetException e) {}
     }
 
+    public void handleBackButton()
+    {
+	ComponentPeerView focusedView = getViewWithFocusOrDefaultView();
+
+        if (focusedView == null)
+            return;
+
+        focusedView.backButtonPressed();
+    }
 
     public void setRequestedOrientation (int requestedOrientation)
     {
@@ -777,7 +789,7 @@ public class JuceBridge
         ((Activity) activityContext).finish();
     }
 
-    public void suspend()
+    public void handleSuspend()
     {
         suspendApp();
         try
@@ -788,7 +800,7 @@ public class JuceBridge
 
     }
 
-    public void resume()
+    public void handleResume()
     {
         resumeApp();
 

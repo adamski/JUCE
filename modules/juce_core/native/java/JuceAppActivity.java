@@ -60,7 +60,7 @@ public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
     @Override
     protected void onPause()
     {
-        juceBridge.suspend();
+        juceBridge.handleSuspend();
         super.onPause();
     }
 
@@ -68,7 +68,7 @@ public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
     protected void onResume()
     {
         super.onResume();
-        juceBridge.resume();
+        juceBridge.handleResume();
 
     }
 
@@ -89,12 +89,7 @@ public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
     @Override
     public void onBackPressed()
     {
-        ComponentPeerView focusedView = juceBridge.getViewWithFocusOrDefaultView();
-
-        if (focusedView == null)
-            return;
-
-        focusedView.backButtonPressed();
+	juceBridge.handleBackPressed();
     }
 
 }
