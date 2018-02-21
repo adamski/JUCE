@@ -582,7 +582,9 @@ void FileOutputStream::flushInternal()
         const LocalRef<jstring> t (javaString (file.getFullPathName()));
         android.bridge.callVoidMethod (JuceBridge.scanFile, t.get());
        #endif
-
+}
+#endif
+    
 Result FileOutputStream::truncate()
 {
     if (fileHandle == 0)
