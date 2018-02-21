@@ -25,6 +25,7 @@ package com.juce;
 import android.app.Activity;
 import android.os.Bundle;
 import android.media.AudioManager;
+import com.juce.JuceBridge;
 
 
 //==============================================================================
