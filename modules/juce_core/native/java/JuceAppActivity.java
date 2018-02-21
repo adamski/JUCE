@@ -28,7 +28,7 @@ import android.media.AudioManager;
 
 
 //==============================================================================
-public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$-
+public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
 {
     private JuceBridge juceBridge;
 
