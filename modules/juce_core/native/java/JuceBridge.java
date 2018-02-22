@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.media.MediaScannerConnection;
 import android.net.http.SslError;
 import android.net.Uri;
 import android.os.Bundle;
@@ -298,7 +299,7 @@ public class JuceBridge
 	Method requestPermissionsMethod = null;
 	try
 	{
-	    requestPermissionsMethod = getActivityContext().getClass().getMethod ("requestPermissions",
+	    requestPermissionsMethod = ((Activity) activityContext).getClass().getMethod ("requestPermissions",
 		    String[].class, int.class);
 	}
 	catch (SecurityException e)     { return; }
@@ -451,7 +452,7 @@ public class JuceBridge
         builder.create().show();
     }
 
-    public final void showOkCancelBox (String title, String message, final long callback
+    public final void showOkCancelBox (String title, String message, final long callback,
                                        String okButtonText, String cancelButtonText)
     {
         AlertDialog.Builder builder = new AlertDialog.Builder (activityContext);
@@ -503,7 +504,7 @@ public class JuceBridge
                     public void onClick (DialogInterface dialog, int id)
                     {
                         dialog.dismiss();
-                        activityContext.this.alertDismissed (callback, 1);
+                        alertDismissed (callback, 1);
                     }
                 })
                 .setNegativeButton ("No", new DialogInterface.OnClickListener()
@@ -698,7 +699,7 @@ public class JuceBridge
                     return super.onKeyDown (keyCode, event);
                 case KeyEvent.KEYCODE_BACK:
                 {
-                    ((Activity) activityContext.getContext()).onBackPressed();
+                    ((Activity) activityContext).onBackPressed();
                     return true;
                 }
                 default: 
@@ -790,7 +791,7 @@ public class JuceBridge
 	    Method systemUIVisibilityMethod = null;
 	    try
 	    {
-		systemUIVisibilityMethod = getActivityContext().getClass().getMethod ("setSystemUiVisibility", int.class);
+		systemUIVisibilityMethod = ((Activity) activityContext).getClass().getMethod ("setSystemUiVisibility", int.class);
 	    }
 	    catch (SecurityException e)     { return; }
 	    catch (NoSuchMethodException e) { return; }
@@ -812,17 +813,17 @@ public class JuceBridge
         {
             return true; //xxx needs to check overlapping views
         }
-    }
 
-    //==============================================================================
-    private native void handleAppResumed (long host);
+	//==============================================================================
+	private native void handleAppResumed (long host);
 
-    public void appResumed()
-    {
-        if (host == 0)
-            return;
+	public void appResumed()
+	{
+	    if (host == 0)
+		return;
 
-        handleAppResumed (host);
+	    handleAppResumed (host);
+	}
     }
 
     //==============================================================================
@@ -984,7 +985,7 @@ public class JuceBridge
 
     public InvocationHandler createInvocationHandler (long nativeContextRef)
     {
-        return new NativeInvocationHandler (this, nativeContextRef);
+        return new NativeInvocationHandler (((Activity) activityContext), nativeContextRef);
     }
 
     public void invocationHandlerContextDeleted (InvocationHandler handler)
@@ -1513,8 +1514,8 @@ public class JuceBridge
         resumeApp();
 
         // Ensure that navigation/status bar visibility is correctly restored.
-        for (int i = 0; i < viewHolder.getChildCount(); ++i)
-            ((ComponentPeerView) viewHolder.getChildAt (i)).appResumed();
+        for (int i = 0; i < juceViewHolder.getChildCount(); ++i)
+            ((ComponentPeerView) juceViewHolder.getChildAt (i)).appResumed();
     }
 
     //==============================================================================
