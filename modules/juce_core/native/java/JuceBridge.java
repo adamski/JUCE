@@ -504,25 +504,33 @@ public class JuceBridge
         builder.create().show();
     }
 
-    public final void showOkCancelBox (String title, String message, final long callback)
+    public final void showOkCancelBox (String title, String message, final long callback
+                                       String okButtonText, String cancelButtonText)
     {
         AlertDialog.Builder builder = new AlertDialog.Builder (activityContext);
         builder.setTitle (title)
                 .setMessage (message)
                 .setCancelable (true)
-                .setPositiveButton ("OK", new DialogInterface.OnClickListener()
+                .setOnCancelListener (new DialogInterface.OnCancelListener()
+                     {
+                         public void onCancel (DialogInterface dialog)
+                         {
+                             activityContext.this.alertDismissed (callback, 0);
+                         }
+                     })
+                .setPositiveButton (okButtonText.isEmpty() ? "OK" : okButtonText, new DialogInterface.OnClickListener()
                 {
                     public void onClick (DialogInterface dialog, int id)
                     {
-                        dialog.cancel();
+                        dialog.dismiss();
                         alertDismissed (callback, 1);
                     }
                 })
-                .setNegativeButton ("Cancel", new DialogInterface.OnClickListener()
+                .setNegativeButton (cancelButtonText.isEmpty() ? "Cancel" : cancelButtonText, new DialogInterface.OnClickListener()
                 {
                     public void onClick (DialogInterface dialog, int id)
                     {
-                        dialog.cancel();
+                        dialog.dismiss();
                         alertDismissed (callback, 0);
                     }
                 });
@@ -536,19 +544,26 @@ public class JuceBridge
         builder.setTitle (title)
                 .setMessage (message)
                 .setCancelable (true)
+                .setOnCancelListener (new DialogInterface.OnCancelListener()
+                {
+                    public void onCancel (DialogInterface dialog)
+                    {
+                        alertDismissed (callback, 0);
+                    }
+                })
                 .setPositiveButton ("Yes", new DialogInterface.OnClickListener()
                 {
                     public void onClick (DialogInterface dialog, int id)
                     {
-                        dialog.cancel();
-                        alertDismissed (callback, 1);
+                        dialog.dismiss();
+                        activityContext.this.alertDismissed (callback, 1);
                     }
                 })
                 .setNegativeButton ("No", new DialogInterface.OnClickListener()
                 {
                     public void onClick (DialogInterface dialog, int id)
                     {
-                        dialog.cancel();
+                        dialog.dismiss();
                         alertDismissed (callback, 2);
                     }
                 })
@@ -556,7 +571,7 @@ public class JuceBridge
                 {
                     public void onClick (DialogInterface dialog, int id)
                     {
-                        dialog.cancel();
+                        dialog.dismiss();
                         alertDismissed (callback, 0);
                     }
                 });
