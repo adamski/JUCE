@@ -93,6 +93,14 @@ public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
         juceBridge.handleBackPressed();
     }
 
+
+    @Override
+    public void onFocusChange (View v, boolean hasFocus)
+    {
+        if (v == this) // Do we need to consider a case of multiple activities here?
+            juceBridge.focusChanged (v, hasFocus);
+    }
+
     @Override
     protected void onActivityResult (int requestCode, int resultCode, Intent data)
     {
