@@ -105,7 +105,7 @@ public:
                      androidActivitySubClassName, androidActivityBaseClassName, androidManifestCustomXmlElements, androidVersionCode,
                      androidMinimumSDK, androidTargetSDK, androidCompileSDK, androidTheme, androidSharedLibraries, androidStaticLibraries,
                      androidExtraAssetsFolder, androidInternetNeeded, androidMicNeeded, androidBluetoothNeeded, androidExternalReadPermission,
-                     androidExternalWritePermission, androidInAppBillingPermission, androidVibratePermission,androidOtherPermissions,
+                     androidExternalWritePermission, androidInAppBillingPermission, androidVibratePermission, androidOtherPermissions, androidRemoteRepositories,
                      androidEnableRemoteNotifications, androidRemoteNotificationsConfigFile, androidEnableContentSharing, androidKeyStore,
                      androidKeyStorePass, androidKeyAlias, androidKeyAliasPass, gradleVersion, gradleToolchain, androidPluginVersion, buildToolsVersion;
 
@@ -137,6 +137,7 @@ public:
           androidVibratePermission             (settings, Ids::androidVibratePermissionNeeded,       getUndoManager(), false),
           androidOtherPermissions              (settings, Ids::androidOtherPermissions,              getUndoManager()),
           androidEnableRemoteNotifications     (settings, Ids::androidEnableRemoteNotifications,     getUndoManager(), false),
+          androidRemoteRepositories            (settings, Ids::androidRemoteRepositories,            getUndoManager()),
           androidRemoteNotificationsConfigFile (settings, Ids::androidRemoteNotificationsConfigFile, getUndoManager()),
           androidEnableContentSharing          (settings, Ids::androidEnableContentSharing,          getUndoManager(), false),
           androidKeyStore                      (settings, Ids::androidKeyStore,                      getUndoManager(), "${user.home}/.android/debug.keystore"),
@@ -170,6 +171,9 @@ public:
 
         props.add (new TextPropertyComponent (buildToolsVersion, "Android build tools version", 32, false),
                    "The Android build tools version that should use to build this app");
+
+        props.add (new TextPropertyComponent (androidRemoteRepositories, "Remote repositories", 8192, true),
+                   "Remote repositories to look for dependencies, e.g. Maven or Ivy");
     }
 
     void createLibraryModuleExporterProperties (PropertyListBuilder& props)
@@ -563,6 +567,11 @@ private:
         mo << "allprojects {"                                                                          << newLine;
         mo << "   repositories {"                                                                      << newLine;
         mo << "       jcenter()"                                                                       << newLine;
+
+        auto repositories = StringArray::fromLines (androidRemoteRepositories.get().toString());
+
+        for (auto line : repositories)
+            mo << "      " << line << newLine;
 
         if (androidEnableRemoteNotifications.get())
         {
