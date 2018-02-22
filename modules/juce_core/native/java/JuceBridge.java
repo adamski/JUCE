@@ -114,8 +114,10 @@ public class JuceBridge
         return false;
     }
 
-    public boolean isPermissionGranted(int permissionID) {
-        return ContextCompat.checkSelfPermission(activityContext, getAndroidPermissionName(permissionID)) == PackageManager.PERMISSION_GRANTED;
+    public boolean isPermissionGranted (int permissionID)
+    {
+        return activityContext.getApplicationContext().checkCallingOrSelfPermission (getAndroidPermissionName (permissionID))
+            == PackageManager.PERMISSION_GRANTED;
     }
 
     // these have to match the values of enum PermissionID in C++ class RuntimePermissions:
@@ -145,11 +147,11 @@ public class JuceBridge
     {
         String permissionName = getAndroidPermissionName (permissionID);
 
-        if (ContextCompat.checkSelfPermission (activityContext, permissionName) != PackageManager.PERMISSION_GRANTED)
+        if (activityContext.getApplicationContext().checkCallingOrSelfPermission (permissionName) != PackageManager.PERMISSION_GRANTED)
         {
             // remember callbackPtr, request permissions, and let onRequestPermissionResult call callback asynchronously
             permissionCallbackPtrMap.put (permissionID, ptrToCallback);
-            ActivityCompat.requestPermissions ((Activity) activityContext, new String[]{permissionName}, permissionID);
+            requestPermissionsCompat (new String[]{permissionName}, permissionID);
         }
         else
         {
