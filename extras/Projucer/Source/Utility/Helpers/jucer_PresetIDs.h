@@ -202,6 +202,8 @@ namespace Ids
     DECLARE_ID (androidRemoteNotificationsConfigFile);
     DECLARE_ID (androidEnableContentSharing);
     DECLARE_ID (androidMinimumSDK);
+    DECLARE_ID (androidTargetSDK);
+    DECLARE_ID (androidCompileSDK);
     DECLARE_ID (androidOtherPermissions);
     DECLARE_ID (androidKeyStore);
     DECLARE_ID (androidKeyStorePass);

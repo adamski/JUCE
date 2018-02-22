@@ -103,8 +103,8 @@ public:
     //==============================================================================
     ValueWithDefault androidJavaLibs, androidRepositories, androidDependencies, androidScreenOrientation, androidActivityClass,
                      androidActivitySubClassName, androidActivityBaseClassName, androidManifestCustomXmlElements, androidVersionCode,
-                     androidMinimumSDK, androidTheme, androidSharedLibraries, androidStaticLibraries, androidExtraAssetsFolder,
-                     androidInternetNeeded, androidMicNeeded, androidBluetoothNeeded, androidExternalReadPermission,
+                     androidMinimumSDK, androidTargetSDK, androidCompileSDK, androidTheme, androidSharedLibraries, androidStaticLibraries,
+                     androidExtraAssetsFolder, androidInternetNeeded, androidMicNeeded, androidBluetoothNeeded, androidExternalReadPermission,
                      androidExternalWritePermission, androidInAppBillingPermission, androidVibratePermission,androidOtherPermissions,
                      androidEnableRemoteNotifications, androidRemoteNotificationsConfigFile, androidEnableContentSharing, androidKeyStore,
                      androidKeyStorePass, androidKeyAlias, androidKeyAliasPass, gradleVersion, gradleToolchain, androidPluginVersion, buildToolsVersion;
@@ -121,7 +121,9 @@ public:
           androidActivityBaseClassName         (settings, Ids::androidActivityBaseClassName,         getUndoManager(), "Activity"),
           androidManifestCustomXmlElements     (settings, Ids::androidManifestCustomXmlElements,     getUndoManager()),
           androidVersionCode                   (settings, Ids::androidVersionCode,                   getUndoManager(), "1"),
+          androidCompileSDK                    (settings, Ids::androidCompileSDK,                    getUndoManager(), "19"),
           androidMinimumSDK                    (settings, Ids::androidMinimumSDK,                    getUndoManager(), "10"),
+          androidTargetSDK                     (settings, Ids::androidTargetSDK,                     getUndoManager(), "19"),
           androidTheme                         (settings, Ids::androidTheme,                         getUndoManager()),
           androidSharedLibraries               (settings, Ids::androidSharedLibraries,               getUndoManager()),
           androidStaticLibraries               (settings, Ids::androidStaticLibraries,               getUndoManager()),
@@ -141,7 +143,7 @@ public:
           androidKeyStorePass                  (settings, Ids::androidKeyStorePass,                  getUndoManager(), "android"),
           androidKeyAlias                      (settings, Ids::androidKeyAlias,                      getUndoManager(), "androiddebugkey"),
           androidKeyAliasPass                  (settings, Ids::androidKeyAliasPass,                  getUndoManager(), "android"),
-          gradleVersion                        (settings, Ids::gradleVersion,                        getUndoManager(), "4.1"),
+          gradleVersion                        (settings, Ids::gradleVersion,                        getUndoManager(), "4.5.1"),
           gradleToolchain                      (settings, Ids::gradleToolchain,                      getUndoManager(), "clang"),
           androidPluginVersion                 (settings, Ids::androidPluginVersion,                 getUndoManager(), "3.0.1"),
           buildToolsVersion                    (settings, Ids::buildToolsVersion,                    getUndoManager(), "27.0.0"),
@@ -582,7 +584,7 @@ private:
         mo << "apply plugin: 'com.android." << (isLibrary() ? "library" : "application") << "'" << newLine << newLine;
 
         mo << "android {"                                                                    << newLine;
-        mo << "    compileSdkVersion " << static_cast<int> (androidMinimumSDK.get())         << newLine;
+        mo << "    compileSdkVersion " << static_cast<int> (androidCompileSDK.get())         << newLine;
         mo << "    buildToolsVersion \"" << buildToolsVersion.get().toString() << "\""       << newLine;
         mo << "    externalNativeBuild {"                                                    << newLine;
         mo << "        cmake {"                                                              << newLine;
@@ -675,6 +677,7 @@ private:
         auto cFlags            = getProjectCompilerFlags();
         auto cxxFlags          = getProjectCxxCompilerFlags();
         auto minSdkVersion     = static_cast<int> (androidMinimumSDK.get());
+        auto targetSdkVersion  = static_cast<int> (androidTargetSDK.get());
 
         MemoryOutputStream mo;
 
@@ -684,7 +687,7 @@ private:
             mo << "        applicationId \"" << bundleIdentifier << "\""          << newLine;
 
         mo << "        minSdkVersion    " << minSdkVersion                        << newLine;
-        mo << "        targetSdkVersion " << minSdkVersion                        << newLine;
+        mo << "        targetSdkVersion " << targetSdkVersion                     << newLine;
 
         mo << "        externalNativeBuild {"                                     << newLine;
         mo << "            cmake {"                                               << newLine;
@@ -870,6 +873,12 @@ private:
 
         props.add (new TextPropertyComponent (androidMinimumSDK, "Minimum SDK version", 32, false),
                    "The number of the minimum version of the Android SDK that the app requires");
+
+        props.add (new TextPropertyComponent (androidCompileSDK, "Compile SDK version", 32, false),
+                   "The number of the platform version against which you will compile the application");
+
+        props.add (new TextPropertyComponent (androidTargetSDK, "Target SDK version", 32, false),
+                   "The number of the target version of the Android SDK that the app has been tested against");
 
         props.add (new TextPropertyComponent (androidExtraAssetsFolder, "Extra Android Assets", 256, false),
                    "A path to a folder (relative to the project folder) which contains extra android assets.");
@@ -1678,7 +1687,7 @@ private:
     {
         auto* sdk = getOrCreateChildWithName (manifest, "uses-sdk");
         setAttributeIfNotPresent (*sdk, "android:minSdkVersion", androidMinimumSDK.get());
-        setAttributeIfNotPresent (*sdk, "android:targetSdkVersion", androidMinimumSDK.get());
+        setAttributeIfNotPresent (*sdk, "android:targetSdkVersion", androidTargetSDK.get());
     }
 
     void createPermissionElements (XmlElement& manifest) const
