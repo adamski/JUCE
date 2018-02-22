@@ -571,7 +571,7 @@ private:
         auto repositories = StringArray::fromLines (androidRemoteRepositories.get().toString());
 
         for (auto line : repositories)
-            mo << "      " << line << newLine;
+            mo << "       " << line << newLine;
 
         if (androidEnableRemoteNotifications.get())
         {
