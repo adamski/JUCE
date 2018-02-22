@@ -183,61 +183,6 @@ public class JuceBridge
     $$JuceAndroidMidiCode$$ // If you get an error here, you need to re-save your project with the Projucer!
 
 
-
-    //==============================================================================
-    public static class MidiPortID extends Object
-    {
-        public MidiPortID (int index, boolean direction)
-        {
-            androidIndex = index;
-            isInput = direction;
-        }
-
-        public int androidIndex;
-        public boolean isInput;
-
-        @Override
-        public int hashCode()
-        {
-            Integer i = new Integer (androidIndex);
-            return i.hashCode() * (isInput ? -1 : 1);
-        }
-
-        @Override
-        public boolean equals (Object obj)
-        {
-            if (obj == null)
-                return false;
-
-            if (getClass() != obj.getClass())
-                return false;
-
-            MidiPortID other = (MidiPortID) obj;
-            return (androidIndex == other.androidIndex && isInput == other.isInput);
-        }
-    }
-
-
-    //==============================================================================
-    public interface JuceMidiPort
-    {
-        boolean isInputPort();
-
-        // start, stop does nothing on an output port
-        void start();
-        void stop();
-
-        void close();
-        MidiPortID getPortId();
-
-        // send will do nothing on an input port
-        void sendMidi (byte[] msg, int offset, int count);
-    }
-
-    //==============================================================================
-    $$JuceAndroidMidiCode$$ // If you get an error here, you need to re-save your project with the Projucer!
-
-    //==============================================================================
     //==============================================================================
     public native void deliverMessage (long value);
     private android.os.Handler messageHandler = new android.os.Handler();
