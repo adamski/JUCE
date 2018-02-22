@@ -93,4 +93,19 @@ public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
         juceBridge.handleBackPressed();
     }
 
+    @Override
+    protected void onActivityResult (int requestCode, int resultCode, Intent data)
+    {
+        juceBridge.appActivityResult (requestCode, resultCode, data);
+    }
+
+    @Override
+    protected void onNewIntent (Intent intent)
+    {
+        super.onNewIntent(intent);
+        setIntent(intent);
+
+        juceBridge.appNewIntent (intent);
+    }
+
 }

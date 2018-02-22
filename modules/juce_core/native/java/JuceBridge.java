@@ -1,69 +1,67 @@
 package com.juce;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.*;
-
-import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ClipboardManager;
-import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Rect;
-import android.graphics.RectF;
-import android.graphics.Typeface;
-import android.media.MediaScannerConnection;
+import android.net.http.SslError;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
 import android.os.Looper;
+import android.os.Handler;
+import android.os.Message;
 import android.os.ParcelUuid;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.text.InputType;
-import android.util.Log;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
+import android.os.Environment;
+import android.view.*;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodManager;
-$$JuceAndroidMidiImports$$ // If you get an error here, you need to re-save your project with the Projucer!
+import android.graphics.*;
+import android.text.ClipboardManager;
+import android.text.InputType;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.util.Pair;
+import android.webkit.SslErrorHandler;
+import android.webkit.WebChromeClient;
+$$JuceAndroidWebViewImports$$         // If you get an error here, you need to re-save your project with the Projucer!
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import java.lang.Runnable;
+import java.lang.ref.WeakReference;
+import java.lang.reflect.*;
+import java.util.*;
+import java.io.*;
+import java.net.URL;
+import java.net.HttpURLConnection;
+import android.media.AudioManager;
+import android.Manifest;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.*;
+$$JuceAndroidMidiImports$$         // If you get an error here, you need to re-save your project with the Projucer!
 
 public class JuceBridge
 {
     static
     {
-        System.loadLibrary("juce_jni");
+        System.loadLibrary ("juce_jni");
     }
 
-    private Context activityContext;
+
     private static JuceBridge instance;
-    private Map<String, ComponentPeerView> componentPeerViewMap;
-    private JuceViewHolder juceViewHolder;
 
     private static class Holder {
         static final JuceBridge INSTANCE = new JuceBridge();
@@ -94,6 +92,217 @@ public class JuceBridge
 
     //==============================================================================
 
+    public boolean isPermissionDeclaredInManifest (int permissionID)
+    {
+        String permissionToCheck = getAndroidPermissionName(permissionID);
+
+        try
+        {
+            PackageInfo info = activityContext.getPackageManager().getPackageInfo(activityContext.getPackageName(), PackageManager.GET_PERMISSIONS);
+
+            if (info.requestedPermissions != null)
+                for (String permission : info.requestedPermissions)
+                    if (permission.equals (permissionToCheck))
+                        return true;
+        }
+        catch (PackageManager.NameNotFoundException e)
+        {
+            Log.d ("JUCE", "isPermissionDeclaredInManifest: PackageManager.NameNotFoundException = " + e.toString());
+        }
+
+        Log.d ("JUCE", "isPermissionDeclaredInManifest: could not find requested permission " + permissionToCheck);
+        return false;
+    }
+
+    public boolean isPermissionGranted(int permissionID) {
+        return ContextCompat.checkSelfPermission(activityContext, getAndroidPermissionName(permissionID)) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    // these have to match the values of enum PermissionID in C++ class RuntimePermissions:
+    private static final int JUCE_PERMISSIONS_RECORD_AUDIO = 1;
+    private static final int JUCE_PERMISSIONS_BLUETOOTH_MIDI = 2;
+    private static final int JUCE_PERMISSIONS_READ_EXTERNAL_STORAGE = 3;
+    private static final int JUCE_PERMISSIONS_WRITE_EXTERNAL_STORAGE = 4;
+
+    private static String getAndroidPermissionName (int permissionID)
+    {
+        switch (permissionID)
+        {
+            case JUCE_PERMISSIONS_RECORD_AUDIO:     return Manifest.permission.RECORD_AUDIO;
+            case JUCE_PERMISSIONS_BLUETOOTH_MIDI:   return Manifest.permission.ACCESS_COARSE_LOCATION;                                                          // use string value as this is not defined in SDKs < 16
+            case JUCE_PERMISSIONS_READ_EXTERNAL_STORAGE:  return "android.permission.READ_EXTERNAL_STORAGE";
+            case JUCE_PERMISSIONS_WRITE_EXTERNAL_STORAGE: return Manifest.permission.WRITE_EXTERNAL_STORAGE;
+        }
+
+        // unknown permission ID!
+        assert false;
+        return new String();
+    }
+
+    private Map<Integer, Long> permissionCallbackPtrMap;
+
+    public void requestRuntimePermission (int permissionID, long ptrToCallback)
+    {
+        String permissionName = getAndroidPermissionName (permissionID);
+
+        if (ContextCompat.checkSelfPermission (activityContext, permissionName) != PackageManager.PERMISSION_GRANTED)
+        {
+            // remember callbackPtr, request permissions, and let onRequestPermissionResult call callback asynchronously
+            permissionCallbackPtrMap.put (permissionID, ptrToCallback);
+            ActivityCompat.requestPermissions ((Activity) activityContext, new String[]{permissionName}, permissionID);
+        }
+        else
+        {
+            // permissions were already granted before, we can call callback directly
+            androidRuntimePermissionsCallback (true, ptrToCallback);
+        }
+    }
+
+    private native void androidRuntimePermissionsCallback (boolean permissionWasGranted, long ptrToCallback);
+
+    $$JuceAndroidRuntimePermissionsCode$$ // If you get an error here, you need to re-save your project with the Projucer!
+
+    //==============================================================================
+    public interface JuceMidiPort
+    {
+        boolean isInputPort();
+
+        // start, stop does nothing on an output port
+        void start();
+        void stop();
+
+        void close();
+
+        // send will do nothing on an input port
+        void sendMidi (byte[] msg, int offset, int count);
+    }
+
+    //==============================================================================
+    $$JuceAndroidMidiCode$$ // If you get an error here, you need to re-save your project with the Projucer!
+
+
+
+    //==============================================================================
+    public static class MidiPortID extends Object
+    {
+        public MidiPortID (int index, boolean direction)
+        {
+            androidIndex = index;
+            isInput = direction;
+        }
+
+        public int androidIndex;
+        public boolean isInput;
+
+        @Override
+        public int hashCode()
+        {
+            Integer i = new Integer (androidIndex);
+            return i.hashCode() * (isInput ? -1 : 1);
+        }
+
+        @Override
+        public boolean equals (Object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (getClass() != obj.getClass())
+                return false;
+
+            MidiPortID other = (MidiPortID) obj;
+            return (androidIndex == other.androidIndex && isInput == other.isInput);
+        }
+    }
+
+
+    //==============================================================================
+    public interface JuceMidiPort
+    {
+        boolean isInputPort();
+
+        // start, stop does nothing on an output port
+        void start();
+        void stop();
+
+        void close();
+        MidiPortID getPortId();
+
+        // send will do nothing on an input port
+        void sendMidi (byte[] msg, int offset, int count);
+    }
+
+    //==============================================================================
+    $$JuceAndroidMidiCode$$ // If you get an error here, you need to re-save your project with the Projucer!
+
+    //==============================================================================
+    //==============================================================================
+    public native void deliverMessage (long value);
+    private android.os.Handler messageHandler = new android.os.Handler();
+
+    public final void postMessage (long value)
+    {
+        messageHandler.post (new MessageCallback (value));
+    }
+
+    private final class MessageCallback  implements Runnable
+    {
+        public MessageCallback (long value_)        { value = value_; }
+        public final void run()                     { deliverMessage (value); }
+
+        private long value;
+    }
+
+    public MidiDeviceManager getMidiDeviceManager() {
+        return midiDeviceManager;
+    }
+
+    public void setMidiDeviceManager(MidiDeviceManager midiDeviceManager) {
+        this.midiDeviceManager = midiDeviceManager;
+    }
+
+    public BluetoothManager getBluetoothManager() {
+        return bluetoothManager;
+    }
+
+    public void setBluetoothManager(BluetoothManager bluetoothManager) {
+        this.bluetoothManager = bluetoothManager;
+    }
+
+
+    //==============================================================================
+    public void callAppLauncher()
+    {
+            if (!hasInitialised())
+                launchApp(activityContext.getApplicationInfo().publicSourceDir,
+                        activityContext.getApplicationInfo().dataDir);
+    }
+
+    public void handleBackPressed()
+    {
+	ComponentPeerView focusedView = getViewWithFocusOrDefaultView();
+
+        if (focusedView == null)
+            return;
+
+        focusedView.backButtonPressed();
+    }
+
+    private ComponentPeerView getViewWithFocusOrDefaultView()
+    {
+	for (int i = 0; i < juceViewHolder.getChildCount(); ++i)
+	{
+	    if (juceViewHolder.getChildAt (i).hasFocus())
+		return (ComponentPeerView) juceViewHolder.getChildAt (i);
+	}
+
+	if (juceViewHolder.getChildCount() > 0)
+	    return (ComponentPeerView) juceViewHolder.getChildAt (0);
+
+	return null;
+    }
+
+    //==============================================================================
     public void hideActionBar()
     {
         // get "getActionBar" method
@@ -137,9 +346,92 @@ public class JuceBridge
         catch (java.lang.reflect.InvocationTargetException e) {}
     }
 
-    private java.util.Timer keepAliveTimer;
-    private boolean isScreenSaverEnabled;
+    public void requestPermissionsCompat (String[] permissions, int requestCode)
+    {
+	Method requestPermissionsMethod = null;
+	try
+	{
+	    requestPermissionsMethod = getActivityContext().getClass().getMethod ("requestPermissions",
+		    String[].class, int.class);
+	}
+	catch (SecurityException e)     { return; }
+	catch (NoSuchMethodException e) { return; }
+	if (requestPermissionsMethod == null) return;
 
+	try
+	{
+	    requestPermissionsMethod.invoke (this, permissions, requestCode);
+	}
+	catch (java.lang.IllegalArgumentException e) {}
+	catch (java.lang.IllegalAccessException e) {}
+	catch (java.lang.reflect.InvocationTargetException e) {}
+    }
+
+    //==============================================================================
+    private native void launchApp (String appFile, String appDataDir);
+    public native void quitApp();
+    public native void suspendApp();
+    public native void resumeApp();
+    public native void setScreenSize (int screenWidth, int screenHeight, int dpi);
+    public native void appActivityResult (int requestCode, int resultCode, Intent data);
+    public native void appNewIntent (Intent intent);
+
+
+    //==============================================================================
+    private Context activityContext;
+    private Map<String, ComponentPeerView> componentPeerViewMap;
+    private JuceViewHolder juceViewHolder;
+    private MidiDeviceManager midiDeviceManager = null;
+    private BluetoothManager bluetoothManager = null;
+    private boolean isScreenSaverEnabled;
+    private java.util.Timer keepAliveTimer;
+
+    public ComponentPeerView getPeerViewForComponent(String componentName)
+    {
+        return componentPeerViewMap.get (componentName);
+    }
+
+    public ComponentPeerView getPeerViewForDefaultComponent()
+    {
+        return componentPeerViewMap.get (null);
+    }
+
+    public final ComponentPeerView createNewView (boolean opaque, long host, String componentName)
+    {
+        ComponentPeerView v = new ComponentPeerView (activityContext, opaque, host);
+        componentPeerViewMap.put (componentName, v);
+        juceViewHolder.addView(v); // So the last created view becomes the default. TODO: make this optional
+
+        return v;
+    }
+
+    public JuceViewHolder getViewHolder()
+    {
+        return juceViewHolder;
+    }
+
+    public final void deleteView (ComponentPeerView view)
+    {
+        ViewGroup group = (ViewGroup) (view.getParent());
+
+        if (group != null)
+            group.removeView (view);
+    }
+
+    public final void deleteNativeSurfaceView (NativeSurfaceView view)
+    {
+        ViewGroup group = (ViewGroup) (view.getParent());
+
+        if (group != null)
+            group.removeView (view);
+    }
+
+    public final void excludeClipRegion (android.graphics.Canvas canvas, float left, float top, float right, float bottom)
+    {
+        canvas.clipRect (left, top, right, bottom, android.graphics.Region.Op.DIFFERENCE);
+    }
+
+    //==============================================================================
     public final void setScreenSaver (boolean enabled) {
         if (isScreenSaverEnabled != enabled)
         {
@@ -173,7 +465,27 @@ public class JuceBridge
             }
         }
     }
+
+    public final boolean getScreenSaver()
+    {
+        return isScreenSaverEnabled;
+    }
+
     //==============================================================================
+    public final String getClipboardContent()
+    {
+        ClipboardManager clipboard = (ClipboardManager) activityContext.getSystemService (Context.CLIPBOARD_SERVICE);
+        return clipboard.getText().toString();
+    }
+
+    public final void setClipboardContent (String newText)
+    {
+        ClipboardManager clipboard = (ClipboardManager) activityContext.getSystemService (Context.CLIPBOARD_SERVICE);
+        clipboard.setText (newText);
+    }
+
+    //==============================================================================
+
     public final void showMessageBox (String title, String message, final long callback)
     {
         AlertDialog.Builder builder = new AlertDialog.Builder (activityContext);
@@ -252,142 +564,12 @@ public class JuceBridge
         builder.create().show();
     }
 
-    //==============================================================================
 
-    public boolean isPermissionDeclaredInManifest (int permissionID)
-    {
-        String permissionToCheck = getAndroidPermissionName(permissionID);
-
-        try
-        {
-            PackageInfo info = activityContext.getPackageManager().getPackageInfo(activityContext.getPackageName(), PackageManager.GET_PERMISSIONS);
-
-            if (info.requestedPermissions != null)
-                for (String permission : info.requestedPermissions)
-                    if (permission.equals (permissionToCheck))
-                        return true;
-        }
-        catch (PackageManager.NameNotFoundException e)
-        {
-            Log.d ("JUCE", "isPermissionDeclaredInManifest: PackageManager.NameNotFoundException = " + e.toString());
-        }
-
-        Log.d ("JUCE", "isPermissionDeclaredInManifest: could not find requested permission " + permissionToCheck);
-        return false;
-    }
-
-    public boolean isPermissionGranted(int permissionID) {
-        return ContextCompat.checkSelfPermission(activityContext, getAndroidPermissionName(permissionID)) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    // these have to match the values of enum PermissionID in C++ class RuntimePermissions:
-    private static final int JUCE_PERMISSIONS_RECORD_AUDIO = 1;
-    private static final int JUCE_PERMISSIONS_BLUETOOTH_MIDI = 2;
-    private static final int JUCE_PERMISSIONS_READ_EXTERNAL_STORAGE = 3;
-    private static final int JUCE_PERMISSIONS_WRITE_EXTERNAL_STORAGE = 4;
-
-    private static String getAndroidPermissionName (int permissionID)
-    {
-        switch (permissionID)
-        {
-            case JUCE_PERMISSIONS_RECORD_AUDIO:     return Manifest.permission.RECORD_AUDIO;
-            case JUCE_PERMISSIONS_BLUETOOTH_MIDI:   return Manifest.permission.ACCESS_COARSE_LOCATION;                                                          // use string value as this is not defined in SDKs < 16
-            case JUCE_PERMISSIONS_READ_EXTERNAL_STORAGE:  return "android.permission.READ_EXTERNAL_STORAGE";
-            case JUCE_PERMISSIONS_WRITE_EXTERNAL_STORAGE: return Manifest.permission.WRITE_EXTERNAL_STORAGE;
-        }
-
-        // unknown permission ID!
-        assert false;
-        return new String();
-    }
-
-    private Map<Integer, Long> permissionCallbackPtrMap;
-
-    public void requestRuntimePermission (int permissionID, long ptrToCallback)
-    {
-        String permissionName = getAndroidPermissionName (permissionID);
-
-        if (ContextCompat.checkSelfPermission (activityContext, permissionName) != PackageManager.PERMISSION_GRANTED)
-        {
-            // remember callbackPtr, request permissions, and let onRequestPermissionResult call callback asynchronously
-            permissionCallbackPtrMap.put (permissionID, ptrToCallback);
-            ActivityCompat.requestPermissions ((Activity) activityContext, new String[]{permissionName}, permissionID);
-        }
-        else
-        {
-            // permissions were already granted before, we can call callback directly
-            androidRuntimePermissionsCallback (true, ptrToCallback);
-        }
-    }
-
-    private native void androidRuntimePermissionsCallback (boolean permissionWasGranted, long ptrToCallback);
-
-    public void onRequestPermissionsResult (int permissionID, String permissions[], int[] grantResults)
-    {
-        boolean permissionsGranted = (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED);
-
-        if (! permissionsGranted)
-            Log.d ("JUCE", "onRequestPermissionsResult: runtime permission was DENIED: " + getAndroidPermissionName (permissionID));
-
-        Long ptrToCallback = permissionCallbackPtrMap.get (permissionID);
-        permissionCallbackPtrMap.remove (permissionID);
-        androidRuntimePermissionsCallback (permissionsGranted, ptrToCallback);
-    }
-
-    //==============================================================================
-    public static class MidiPortID extends Object
-    {
-        public MidiPortID (int index, boolean direction)
-        {
-            androidIndex = index;
-            isInput = direction;
-        }
-
-        public int androidIndex;
-        public boolean isInput;
-
-        @Override
-        public int hashCode()
-        {
-            Integer i = new Integer (androidIndex);
-            return i.hashCode() * (isInput ? -1 : 1);
-        }
-
-        @Override
-        public boolean equals (Object obj)
-        {
-            if (obj == null)
-                return false;
-
-            if (getClass() != obj.getClass())
-                return false;
-
-            MidiPortID other = (MidiPortID) obj;
-            return (androidIndex == other.androidIndex && isInput == other.isInput);
-        }
-    }
-
-    public interface JuceMidiPort
-    {
-        boolean isInputPort();
-
-        // start, stop does nothing on an output port
-        void start();
-        void stop();
-
-        void close();
-        MidiPortID getPortId();
-
-        // send will do nothing on an input port
-        void sendMidi (byte[] msg, int offset, int count);
-    }
-
-    //==============================================================================
-    $$JuceAndroidMidiCode$$ // If you get an error here, you need to re-save your project with the Projucer!
+    public native void alertDismissed (long callback, int id);
 
     //==============================================================================
     public final class ComponentPeerView extends ViewGroup
-            implements View.OnFocusChangeListener
+                                         implements View.OnFocusChangeListener
     {
         public ComponentPeerView (Context context, boolean opaque_, long host)
         {
@@ -663,170 +845,10 @@ public class JuceBridge
             return true; //xxx needs to check overlapping views
         }
     }
-    //==============================================================================
-    public native void deliverMessage (long value);
-    private android.os.Handler messageHandler = new android.os.Handler();
-
-    public final void postMessage (long value)
-    {
-        messageHandler.post (new MessageCallback (value));
-    }
-
-    private final class MessageCallback  implements Runnable
-    {
-        public MessageCallback (long value_)        { value = value_; }
-        public final void run()                     { deliverMessage (value); }
-
-        private long value;
-    }
-
-    public MidiDeviceManager getMidiDeviceManager() {
-        return midiDeviceManager;
-    }
-
-    public void setMidiDeviceManager(MidiDeviceManager midiDeviceManager) {
-        this.midiDeviceManager = midiDeviceManager;
-    }
-
-    public BluetoothManager getBluetoothManager() {
-        return bluetoothManager;
-    }
-
-    public void setBluetoothManager(BluetoothManager bluetoothManager) {
-        this.bluetoothManager = bluetoothManager;
-    }
-
-
-    //==============================================================================
-    private MidiDeviceManager midiDeviceManager = null;
-    private BluetoothManager bluetoothManager = null;
-
-    public ComponentPeerView getPeerViewForComponent(String componentName)
-    {
-        return componentPeerViewMap.get (componentName);
-    }
-
-    public ComponentPeerView getPeerViewForDefaultComponent()
-    {
-        return componentPeerViewMap.get (null);
-    }
-
-    public final ComponentPeerView createNewView (boolean opaque, long host, String componentName)
-    {
-        ComponentPeerView v = new ComponentPeerView (activityContext, opaque, host);
-        componentPeerViewMap.put (componentName, v);
-        juceViewHolder.addView(v); // So the last created view becomes the default. TODO: make this optional
-
-        return v;
-    }
-
-    public JuceViewHolder getViewHolder()
-    {
-        return juceViewHolder;
-    }
-
-    public final void deleteView (ComponentPeerView view)
-    {
-        ViewGroup group = (ViewGroup) (view.getParent());
-
-        if (group != null)
-            group.removeView (view);
-    }
-
-    public final void deleteNativeSurfaceView (NativeSurfaceView view)
-    {
-        ViewGroup group = (ViewGroup) (view.getParent());
-
-        if (group != null)
-            group.removeView (view);
-    }
-
-    public void callAppLauncher()
-    {
-            if (!hasInitialised())
-                launchApp(activityContext.getApplicationInfo().publicSourceDir,
-                        activityContext.getApplicationInfo().dataDir);
-    }
-
-    public void requestPermissionsCompat (String[] permissions, int requestCode)
-    {
-	Method requestPermissionsMethod = null;
-	try
-	{
-	    requestPermissionsMethod = getActivityContext().getClass().getMethod ("requestPermissions",
-		    String[].class, int.class);
-	}
-	catch (SecurityException e)     { return; }
-	catch (NoSuchMethodException e) { return; }
-	if (requestPermissionsMethod == null) return;
-
-	try
-	{
-	    requestPermissionsMethod.invoke (this, permissions, requestCode);
-	}
-	catch (java.lang.IllegalArgumentException e) {}
-	catch (java.lang.IllegalAccessException e) {}
-	catch (java.lang.reflect.InvocationTargetException e) {}
-    }
-
-    public void handleBackPressed()
-    {
-	ComponentPeerView focusedView = getViewWithFocusOrDefaultView();
-
-        if (focusedView == null)
-            return;
-
-        focusedView.backButtonPressed();
-    }
-
-    public void setRequestedOrientation (int requestedOrientation)
-    {
-        ((Activity) activityContext).setRequestedOrientation (requestedOrientation);
-    }
-
-    public void finish()
-    {
-        ((Activity) activityContext).finish();
-    }
-
-    public void handleSuspend()
-    {
-        suspendApp();
-        try
-        {
-            Thread.sleep(1000); // This is a bit of a hack to avoid some hard-to-track-down
-                                // openGL glitches when pausing/resuming apps..
-        } catch (InterruptedException e) {}
-
-    }
-
-    public void handleResume()
-    {
-        resumeApp();
-
-        // Ensure that navigation/status bar visibility is correctly restored.
-        for (int i = 0; i < viewHolder.getChildCount(); ++i)
-            ((ComponentPeerView) viewHolder.getChildAt (i)).appResumed();
-    }
-
-    //==============================================================================
-    private native void launchApp (String appFile, String appDataDir);
-    public native void quitApp();
-    public native void suspendApp();
-    public native void resumeApp();
-    public native void setScreenSize (int screenWidth, int screenHeight, int dpi);
-    public native void appActivityResult (int requestCode, int resultCode, Intent data);
-    public native void appNewIntent (Intent intent);
-
-    //==============================================================================
-    public final void excludeClipRegion (android.graphics.Canvas canvas, float left, float top, float right, float bottom)
-    {
-        canvas.clipRect (left, top, right, bottom, android.graphics.Region.Op.DIFFERENCE);
-    }
 
     //==============================================================================
     public static class NativeSurfaceView    extends SurfaceView
-            implements SurfaceHolder.Callback
+                                          implements SurfaceHolder.Callback
     {
         private long nativeContext = 0;
 
@@ -901,27 +923,7 @@ public class JuceBridge
         return new NativeSurfaceView (this.activityContext, nativeSurfacePtr);
     }
 
-    //==============================================================================
 
-    public final boolean getScreenSaver()
-    {
-        return isScreenSaverEnabled;
-    }
-
-    //==============================================================================
-    public final String getClipboardContent()
-    {
-        ClipboardManager clipboard = (ClipboardManager) activityContext.getSystemService (Context.CLIPBOARD_SERVICE);
-        return clipboard.getText().toString();
-    }
-
-    public final void setClipboardContent (String newText)
-    {
-        ClipboardManager clipboard = (ClipboardManager) activityContext.getSystemService (Context.CLIPBOARD_SERVICE);
-        clipboard.setText (newText);
-    }
-
-    public native void alertDismissed (long callback, int id);
 
     //==============================================================================
     public final int[] renderGlyph (char glyph, Paint paint, android.graphics.Matrix matrix, Rect bounds)
@@ -957,6 +959,58 @@ public class JuceBridge
     }
 
     private int[] cachedRenderArray = new int [256];
+
+    //==============================================================================
+    public static class NativeInvocationHandler implements InvocationHandler
+    {
+        public NativeInvocationHandler (Activity activityToUse, long nativeContextRef)
+        {
+            activity = activityToUse;
+            nativeContext = nativeContextRef;
+        }
+
+        public void nativeContextDeleted()
+        {
+            nativeContext = 0;
+        }
+
+        @Override
+        public void finalize()
+        {
+            activity.runOnUiThread (new Runnable()
+                                    {
+                                        @Override
+                                        public void run()
+                                        {
+                                            if (nativeContext != 0)
+                                                dispatchFinalize (nativeContext);
+                                        }
+                                    });
+        }
+
+        @Override
+        public Object invoke (Object proxy, Method method, Object[] args) throws Throwable
+        {
+            return dispatchInvoke (nativeContext, proxy, method, args);
+        }
+
+        //==============================================================================
+        Activity activity;
+        private long nativeContext = 0;
+
+        private native void dispatchFinalize (long nativeContextRef);
+        private native Object dispatchInvoke (long nativeContextRef, Object proxy, Method method, Object[] args);
+    }
+
+    public InvocationHandler createInvocationHandler (long nativeContextRef)
+    {
+        return new NativeInvocationHandler (this, nativeContextRef);
+    }
+
+    public void invocationHandlerContextDeleted (InvocationHandler handler)
+    {
+        ((NativeInvocationHandler) handler).nativeContextDeleted();
+    }
 
     //==============================================================================
     public static class HTTPStream
@@ -1136,12 +1190,85 @@ public class JuceBridge
             ((Activity) activityContext).startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
     }
 
+    private native boolean webViewPageLoadStarted (long host, WebView view, String url);
+    private native void webViewPageLoadFinished (long host, WebView view, String url);
+    $$JuceAndroidWebViewNativeCode$$ // If you get an error here, you need to re-save your project with the Projucer!
+    private native void webViewReceivedSslError (long host, WebView view, SslErrorHandler handler, SslError error);
+    private native void webViewCloseWindowRequest (long host, WebView view);
+    private native void webViewCreateWindowRequest (long host, WebView view);
+
+   //==============================================================================
+    public class JuceWebViewClient   extends WebViewClient
+    {
+        public JuceWebViewClient (long hostToUse)
+        {
+            host = hostToUse;
+        }
+
+        public void hostDeleted()
+        {
+            synchronized (hostLock)
+            {
+                host = 0;
+            }
+        }
+
+        @Override
+        public void onPageFinished (WebView view, String url)
+        {
+            if (host == 0)
+                return;
+
+            webViewPageLoadFinished (host, view, url);
+        }
+
+        @Override
+        public void onReceivedSslError (WebView view, SslErrorHandler handler, SslError error)
+        {
+            if (host == 0)
+                return;
+
+            webViewReceivedSslError (host, view, handler, error);
+        }
+        $$JuceAndroidWebViewCode$$ // If you get an error here, you need to re-save your project with the Projucer!
+
+        private long host;
+        private final Object hostLock = new Object();
+    }
+
+    public class JuceWebChromeClient    extends WebChromeClient
+    {
+        public JuceWebChromeClient (long hostToUse)
+        {
+            host = hostToUse;
+        }
+
+        @Override
+        public void onCloseWindow (WebView window)
+        {
+            webViewCloseWindowRequest (host, window);
+        }
+
+        @Override
+        public boolean onCreateWindow (WebView view, boolean isDialog,
+                                       boolean isUserGesture, Message resultMsg)
+        {
+            webViewCreateWindowRequest (host, view);
+            return false;
+        }
+
+        private long host;
+        private final Object hostLock = new Object();
+    }
+
+
+    //==============================================================================
     public static final String getLocaleValue (boolean isRegion)
     {
         java.util.Locale locale = java.util.Locale.getDefault();
 
-        return isRegion ? locale.getDisplayCountry  (java.util.Locale.US)
-                : locale.getDisplayLanguage (java.util.Locale.US);
+        return isRegion ? locale.getCountry()
+                        : locale.getLanguage();
     }
 
     private static final String getFileLocation (String type)
@@ -1154,6 +1281,37 @@ public class JuceBridge
     public static final String getMusicFolder()      { return getFileLocation (Environment.DIRECTORY_MUSIC); }
     public static final String getMoviesFolder()     { return getFileLocation (Environment.DIRECTORY_MOVIES); }
     public static final String getDownloadsFolder()  { return getFileLocation (Environment.DIRECTORY_DOWNLOADS); }
+
+
+    public void setRequestedOrientation (int requestedOrientation)
+    {
+        ((Activity) activityContext).setRequestedOrientation (requestedOrientation);
+    }
+
+    public void finish()
+    {
+        ((Activity) activityContext).finish();
+    }
+
+    public void handleSuspend()
+    {
+        suspendApp();
+        try
+        {
+            Thread.sleep(1000); // This is a bit of a hack to avoid some hard-to-track-down
+                                // openGL glitches when pausing/resuming apps..
+        } catch (InterruptedException e) {}
+
+    }
+
+    public void handleResume()
+    {
+        resumeApp();
+
+        // Ensure that navigation/status bar visibility is correctly restored.
+        for (int i = 0; i < viewHolder.getChildCount(); ++i)
+            ((ComponentPeerView) viewHolder.getChildAt (i)).appResumed();
+    }
 
     //==============================================================================
     private final class SingleMediaScanner  implements MediaScannerConnection.MediaScannerConnectionClient
@@ -1301,36 +1459,9 @@ public class JuceBridge
         return null;
     }
 
-    public final int setCurrentThreadPriority (int priority)
-    {
-        android.os.Process.setThreadPriority (android.os.Process.myTid(), priority);
-        return android.os.Process.getThreadPriority (android.os.Process.myTid());
-    }
-
     public final boolean hasSystemFeature (String property)
     {
         return activityContext.getPackageManager().hasSystemFeature (property);
     }
 
-    private static class JuceThread extends Thread
-    {
-        public JuceThread (long host, String threadName, long threadStackSize)
-        {
-            super (null, null, threadName, threadStackSize);
-            _this = host;
-        }
-
-        public void run()
-        {
-            runThread(_this);
-        }
-
-        private native void runThread (long host);
-        private long _this;
-    }
-
-    public final Thread createNewThread(long host, String threadName, long threadStackSize)
-    {
-        return new JuceThread(host, threadName, threadStackSize);
-    }
 }

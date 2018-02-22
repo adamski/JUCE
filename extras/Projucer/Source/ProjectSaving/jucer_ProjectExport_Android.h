@@ -1007,11 +1007,24 @@ private:
         auto javaSourceFile = javaSourceFolder.getChildFile ("JuceAppActivity.java");
         auto javaSourceLines = StringArray::fromLines (javaSourceFile.loadFileAsString());
 
+        {
+            MemoryOutputStream newFile;
+
+            for (auto &line : javaSourceLines)
+            {
+                newFile << line.replace ("$$JuceAppActivityBaseClass$$", androidActivityBaseClassName.get().toString())
+                               .replace ("JuceAppActivity", className)
+                               .replace ("package com.juce;", "package " + package + ";") << newLine;
+            }
+
+            javaSourceLines = StringArray::fromLines (newFile.toString());
+        }
+
         while (javaSourceLines.size() > 2
                && javaSourceLines[javaSourceLines.size() - 1].trim().isEmpty()
                && javaSourceLines[javaSourceLines.size() - 2].trim().isEmpty())
             javaSourceLines.remove (javaSourceLines.size() - 1);
-        
+
         overwriteFileIfDifferentOrThrow (javaDestFile, javaSourceLines.joinIntoString (newLine));
     }
 
@@ -1026,8 +1039,8 @@ private:
         String juceMidiCode, juceMidiImports, juceRuntimePermissionsCode;
 
         // TODO: don't merge all the files into one, now that Activity is seperated.
-        
-        juceMidiImports << newLine;-
+
+        juceMidiImports << newLine;
 
         if (static_cast<int> (androidMinimumSDK.get()) >= 23)
         {
@@ -1038,15 +1051,14 @@ private:
                             << "import android.bluetooth.*;" << newLine
                             << "import android.bluetooth.le.*;" << newLine;
 
-            juceMidiCode = javaAndroidMidi.loadFileAsString().replace ("JuceAppActivity", className);
+            juceMidiCode = javaAndroidMidi.loadFileAsString();
 
-            juceRuntimePermissionsCode = javaRuntimePermissions.loadFileAsString().replace ("JuceAppActivity", className);
+            juceRuntimePermissionsCode = javaRuntimePermissions.loadFileAsString();
         }
         else
         {
             juceMidiCode = javaSourceFolder.getChildFile ("AndroidMidiFallback.java")
-                                           .loadFileAsString()
-                                           .replace ("JuceAppActivity", className);
+                                           .loadFileAsString();
         }
 
         String juceWebViewImports, juceWebViewCodeNative, juceWebViewCode;
@@ -1115,12 +1127,10 @@ private:
                 else if (line.contains ("$$JuceAndroidWebViewCode$$"))
                     newFile << juceWebViewCode;
                 else
-                    newFile << line.replace ("$$JuceAppActivityBaseClass$$", androidActivityBaseClassName.get().toString())
-                                   .replace ("JuceAppActivity", className)
-                                   .replace ("package com.juce;", "package " + package + ";") << newLine;
+                    newFile << line << newLine;
             }
 
-            javaSourceLines = StringArray::fromLines (newFile.toString());
+            javaSourceLines =  StringArray::fromLines (newFile.toString());
         }
 
         while (javaSourceLines.size() > 2
@@ -1129,6 +1139,9 @@ private:
             javaSourceLines.remove (javaSourceLines.size() - 1);
 
         overwriteFileIfDifferentOrThrow (javaBridgeDestFile, javaSourceLines.joinIntoString (newLine));
+
+        auto javaViewHolderFile = javaSourceFolder.getChildFile ("JuceViewHolder.java");
+        overwriteFileIfDifferentOrThrow (javaViewHolderDestFile, javaViewHolderFile.loadFileAsString());
     }
 
     void copyAdditionalJavaFiles (const File& sourceFolder, const File& targetFolder) const
