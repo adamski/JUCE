@@ -24,6 +24,7 @@ package com.juce;
 
 import android.app.Activity;
 import android.os.Bundle;	
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.media.AudioManager;
 import com.juce.JuceBridge;
@@ -46,7 +47,7 @@ public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
 
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-        permissionCallbackPtrMap = new HashMap<Integer, Long>();
+        //permissionCallbackPtrMap = new HashMap<Integer, Long>();
     }
 
     @Override
