@@ -230,6 +230,7 @@ namespace Ids
     DECLARE_ID (iosAppExtensionDuplicateResourcesFolder);
     DECLARE_ID (buildToolsVersion);
     DECLARE_ID (gradleVersion);
+    DECLARE_ID (gradleSettings);
     const Identifier androidPluginVersion ("gradleWrapperVersion"); // old name is very confusing, but we need to remain backward compatible
     DECLARE_ID (gradleToolchain);
     DECLARE_ID (gradleToolchainVersion);

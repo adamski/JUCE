@@ -106,7 +106,7 @@ public:
                      androidMinimumSDK, androidTargetSDK, androidCompileSDK, androidTheme, androidSharedLibraries, androidStaticLibraries,
                      androidExtraAssetsFolder, androidInternetNeeded, androidMicNeeded, androidBluetoothNeeded, androidExternalReadPermission,
                      androidExternalWritePermission, androidInAppBillingPermission, androidVibratePermission, androidOtherPermissions, androidRemoteRepositories,
-                     androidEnableRemoteNotifications, androidRemoteNotificationsConfigFile, androidEnableContentSharing, androidKeyStore,
+                     androidEnableRemoteNotifications, androidRemoteNotificationsConfigFile, androidEnableContentSharing, androidKeyStore, gradleSettings,
                      androidKeyStorePass, androidKeyAlias, androidKeyAliasPass, gradleVersion, gradleToolchain, androidPluginVersion, buildToolsVersion;
 
     //==============================================================================
@@ -146,6 +146,7 @@ public:
           androidKeyAliasPass                  (settings, Ids::androidKeyAliasPass,                  getUndoManager(), "android"),
           gradleVersion                        (settings, Ids::gradleVersion,                        getUndoManager(), "4.5.1"),
           gradleToolchain                      (settings, Ids::gradleToolchain,                      getUndoManager(), "clang"),
+          gradleSettings                       (settings, Ids::gradleSettings,                       getUndoManager()),
           androidPluginVersion                 (settings, Ids::androidPluginVersion,                 getUndoManager(), "3.0.1"),
           buildToolsVersion                    (settings, Ids::buildToolsVersion,                    getUndoManager(), "27.0.0"),
           AndroidExecutable (findAndroidExecutable())
@@ -221,6 +222,7 @@ public:
         copyExtraResourceFiles();
 
         writeFile (targetFolder, "settings.gradle",                          isLibrary() ? "include ':lib'" : "include ':app'");
+        writeFile (targetFolder, "settings.gradle",                          getProjectSettingsGradleFileContent());
         writeFile (targetFolder, "build.gradle",                             getProjectBuildGradleFileContent());
         writeFile (appFolder,    "build.gradle",                             getAppBuildGradleFileContent());
         writeFile (targetFolder, "local.properties",                         getLocalPropertiesFileContent());
@@ -586,6 +588,16 @@ private:
         return mo.toString();
     }
 
+    String getProjectSettingsGradleFileContent() const
+    {
+        MemoryOutputStream mo;
+
+        mo << (isLibrary() ? "include ':lib'" : "include ':app'") << newLine;
+        mo << gradleSettings.get().toString();
+
+        return mo.toString();
+    }
+
     //==============================================================================
     String getAppBuildGradleFileContent() const
     {
@@ -844,6 +856,9 @@ private:
                    "Java libs (JAR files) (one per line). These will be copied to app/libs folder and \"implementation files\" "
                    "dependency will be automatically added to module \"dependencies\" section for each library, so do "
                    "not add the dependency yourself.");
+
+        props.add (new TextPropertyComponent (gradleSettings, "Gradle settings", 8192, true),
+                   "Additional gradle settings (one per line). These will be added to the project-level gradle file.");
 
         props.add (new TextPropertyComponent (androidRepositories, "Module repositories", 32768, true),
                    "Module repositories (one per line). These will be added to module-level gradle file repositories section. ");
