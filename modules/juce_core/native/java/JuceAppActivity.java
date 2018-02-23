@@ -76,7 +76,8 @@ public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
     @Override
     public void onRequestPermissionsResult (int permissionID, String permissions[], int[] grantResults)
     {
-        juceBridge.onRequestPermissionsResult (permissionID, permissions, grantResults);
+        // TODO: Fix
+        //juceBridge.onRequestPermissionsResult (permissionID, permissions, grantResults);
     }
 
     @Override
@@ -91,14 +92,6 @@ public class JuceAppActivity   extends $$JuceAppActivityBaseClass$$
     public void onBackPressed()
     {
         juceBridge.handleBackPressed();
-    }
-
-
-    @Override
-    public void onFocusChange (View v, boolean hasFocus)
-    {
-        if (v == this) // Do we need to consider a case of multiple activities here?
-            juceBridge.focusChanged (v, hasFocus);
     }
 
     @Override

@@ -1322,6 +1322,11 @@ private:
         return androidActivityClass.get().toString().replaceCharacter ('.', '/');
     }
 
+    String getJNIJuceBridgeClassName() const
+    {
+        return getJuceClassPackage().replaceCharacter ('.', '/') + "/JuceBridge";
+    }
+
     static LibraryModule* getCoreModule (const OwnedArray<LibraryModule>& modules)
     {
         for (int i = modules.size(); --i >= 0;)
@@ -1523,6 +1528,8 @@ private:
         defines.set ("JUCE_ANDROID_API_VERSION", androidMinimumSDK.get());
         defines.set ("JUCE_ANDROID_ACTIVITY_CLASSNAME", getJNIActivityClassName().replaceCharacter ('/', '_'));
         defines.set ("JUCE_ANDROID_ACTIVITY_CLASSPATH", "\"" + getJNIActivityClassName() + "\"");
+        defines.set ("JUCE_ANDROID_BRIDGE_CLASSNAME", getJNIJuceBridgeClassName().replaceCharacter ('/', '_'));
+        defines.set ("JUCE_ANDROID_BRIDGE_CLASSPATH", "\"" + getJNIJuceBridgeClassName() + "\"");
         defines.set ("JUCE_ANDROID_SHARING_CONTENT_PROVIDER_CLASSNAME", getSharingContentProviderClassName().replaceCharacter('.', '_'));
         defines.set ("JUCE_ANDROID_SHARING_CONTENT_PROVIDER_CLASSPATH", "\"" + getSharingContentProviderClassName().replaceCharacter('.', '/') + "\"");
         defines.set ("JUCE_PUSH_NOTIFICATIONS", "1");
