@@ -20,6 +20,45 @@
   ==============================================================================
 */
 
+#pragma  once
+
+//==============================================================================
+#define CREATE_JNI_METHOD(methodID, stringName, params)         methodID = resolveMethod (env, stringName, params);
+#define CREATE_JNI_STATICMETHOD(methodID, stringName, params)   methodID = resolveStaticMethod (env, stringName, params);
+#define CREATE_JNI_FIELD(fieldID, stringName, signature)        fieldID  = resolveField (env, stringName, signature);
+#define CREATE_JNI_STATICFIELD(fieldID, stringName, signature)  fieldID  = resolveStaticField (env, stringName, signature);
+#define DECLARE_JNI_METHOD(methodID, stringName, params)        jmethodID methodID;
+#define DECLARE_JNI_FIELD(fieldID, stringName, signature)       jfieldID  fieldID;
+
+#define DECLARE_JNI_CLASS(CppClassName, javaPath) \
+class CppClassName ## _Class   : public JNIClassBase \
+{ \
+public: \
+CppClassName ## _Class() : JNIClassBase (javaPath) {} \
+\
+void initialiseFields (JNIEnv* env) \
+{ \
+ignoreUnused (env); \
+JNI_CLASS_MEMBERS (CREATE_JNI_METHOD, CREATE_JNI_STATICMETHOD, CREATE_JNI_FIELD, CREATE_JNI_STATICFIELD); \
+} \
+\
+JNI_CLASS_MEMBERS (DECLARE_JNI_METHOD, DECLARE_JNI_METHOD, DECLARE_JNI_FIELD, DECLARE_JNI_FIELD) \
+}; \
+static CppClassName ## _Class CppClassName;
+
+
+//==============================================================================
+#if defined (__arm__)
+#define JUCE_ARM_SOFT_FLOAT_ABI  __attribute__ ((pcs("aapcs")))
+#else
+#define JUCE_ARM_SOFT_FLOAT_ABI
+#endif
+
+#define JUCE_JNI_CALLBACK(className, methodName, returnType, params) \
+extern "C" __attribute__ ((visibility("default"))) JUCE_ARM_SOFT_FLOAT_ABI returnType JUCE_JOIN_MACRO (JUCE_JOIN_MACRO (Java_, className), _ ## methodName) params
+
+
+
 namespace juce
 {
 
@@ -227,41 +266,6 @@ private:
     JUCE_DECLARE_NON_COPYABLE (JNIClassBase)
 };
 
-//==============================================================================
-#define CREATE_JNI_METHOD(methodID, stringName, params)         methodID = resolveMethod (env, stringName, params);
-#define CREATE_JNI_STATICMETHOD(methodID, stringName, params)   methodID = resolveStaticMethod (env, stringName, params);
-#define CREATE_JNI_FIELD(fieldID, stringName, signature)        fieldID  = resolveField (env, stringName, signature);
-#define CREATE_JNI_STATICFIELD(fieldID, stringName, signature)  fieldID  = resolveStaticField (env, stringName, signature);
-#define DECLARE_JNI_METHOD(methodID, stringName, params)        jmethodID methodID;
-#define DECLARE_JNI_FIELD(fieldID, stringName, signature)       jfieldID  fieldID;
-
-#define DECLARE_JNI_CLASS(CppClassName, javaPath) \
-    class CppClassName ## _Class   : public JNIClassBase \
-    { \
-    public: \
-        CppClassName ## _Class() : JNIClassBase (javaPath) {} \
-    \
-        void initialiseFields (JNIEnv* env) \
-        { \
-            ignoreUnused (env); \
-            JNI_CLASS_MEMBERS (CREATE_JNI_METHOD, CREATE_JNI_STATICMETHOD, CREATE_JNI_FIELD, CREATE_JNI_STATICFIELD); \
-        } \
-    \
-        JNI_CLASS_MEMBERS (DECLARE_JNI_METHOD, DECLARE_JNI_METHOD, DECLARE_JNI_FIELD, DECLARE_JNI_FIELD) \
-    }; \
-    static CppClassName ## _Class CppClassName;
-
-
-//==============================================================================
-#if defined (__arm__)
- #define JUCE_ARM_SOFT_FLOAT_ABI  __attribute__ ((pcs("aapcs")))
-#else
- #define JUCE_ARM_SOFT_FLOAT_ABI
-#endif
-
-#define JUCE_JNI_CALLBACK(className, methodName, returnType, params) \
-  extern "C" __attribute__ ((visibility("default"))) JUCE_ARM_SOFT_FLOAT_ABI returnType JUCE_JOIN_MACRO (JUCE_JOIN_MACRO (Java_, className), _ ## methodName) params
-
 
 
 //==============================================================================
@@ -294,9 +298,9 @@ extern AndroidSystem android;
  METHOD (renderGlyph,            "renderGlyph",          "(CLandroid/graphics/Paint;Landroid/graphics/Matrix;Landroid/graphics/Rect;)[I") \
  STATICMETHOD (createHTTPStream, "createHTTPStream",     "(Ljava/lang/String;Z[BLjava/lang/String;I[ILjava/lang/StringBuffer;ILjava/lang/String;)L" JUCE_ANDROID_BRIDGE_CLASSPATH "$HTTPStream;") \
  METHOD (launchURL,              "launchURL",            "(Ljava/lang/String;)V") \
- METHOD (showMessageBox,                  "showMessageBox",       "(Ljava/lang/String;Ljava/lang/String;J)V") \
- METHOD (showOkCancelBox,                 "showOkCancelBox",                 "(Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)V") \
- METHOD (showYesNoCancelBox,              "showYesNoCancelBox",   "(Ljava/lang/String;Ljava/lang/String;J)V") \
+ METHOD (showMessageBox,         "showMessageBox",       "(Ljava/lang/String;Ljava/lang/String;J)V") \
+ METHOD (showOkCancelBox,        "showOkCancelBox",                 "(Ljava/lang/String;Ljava/lang/String;JLjava/lang/String;Ljava/lang/String;)V") \
+ METHOD (showYesNoCancelBox,     "showYesNoCancelBox",   "(Ljava/lang/String;Ljava/lang/String;J)V") \
  STATICMETHOD (getLocaleValue,   "getLocaleValue",       "(Z)Ljava/lang/String;") \
  STATICMETHOD (getDocumentsFolder, "getDocumentsFolder", "()Ljava/lang/String;") \
  STATICMETHOD (getPicturesFolder,  "getPicturesFolder",  "()Ljava/lang/String;") \
@@ -308,16 +312,11 @@ extern AndroidSystem android;
  METHOD (getTypeFaceFromByteArray,"getTypeFaceFromByteArray","([B)Landroid/graphics/Typeface;") \
  METHOD (setScreenSaver,          "setScreenSaver",       "(Z)V") \
  METHOD (getScreenSaver,          "getScreenSaver",       "()Z") \
- METHOD (showMessageBox,         "showMessageBox",       "(Ljava/lang/String;Ljava/lang/String;J)V") \
- METHOD (showOkCancelBox,        "showOkCancelBox",      "(Ljava/lang/String;Ljava/lang/String;J)V") \
- METHOD (showYesNoCancelBox,     "showYesNoCancelBox",   "(Ljava/lang/String;Ljava/lang/String;J)V") \
  METHOD (getAndroidMidiDeviceManager, "getAndroidMidiDeviceManager", "()L" JUCE_ANDROID_BRIDGE_CLASSPATH "$MidiDeviceManager;") \
  METHOD (getAndroidBluetoothManager, "getAndroidBluetoothManager", "()L" JUCE_ANDROID_BRIDGE_CLASSPATH "$BluetoothManager;") \
  METHOD (getAndroidSDKVersion,    "getAndroidSDKVersion", "()I") \
  METHOD (audioManagerGetProperty, "audioManagerGetProperty", "(Ljava/lang/String;)Ljava/lang/String;") \
- /* METHOD (setCurrentThreadPriority, "setCurrentThreadPriority", "(I)I") \ */
  METHOD (hasSystemFeature,         "hasSystemFeature", "(Ljava/lang/String;)Z" ) \
- /* METHOD (createNewThread,          "createNewThread", "(JLjava/lang/String;J)Ljava/lang/Thread;") \ */
  METHOD (requestRuntimePermission, "requestRuntimePermission", "(IJ)V" ) \
  METHOD (isPermissionGranted,     "isPermissionGranted", "(I)Z" ) \
  METHOD (isPermissionDeclaredInManifest, "isPermissionDeclaredInManifest", "(I)Z" ) \
@@ -344,7 +343,7 @@ DECLARE_JNI_CLASS (JuceBridge, JUCE_ANDROID_BRIDGE_CLASSPATH);
  METHOD (finish,                 "finish",               "()V") \
  METHOD (setRequestedOrientation,"setRequestedOrientation", "(I)V") \
 
-DECLARE_JNI_CLASS (JuceBridge, JUCE_ANDROID_BRIDGE_CLASSPATH);
+DECLARE_JNI_CLASS (JuceAppActivity, JUCE_ANDROID_ACTIVITY_CLASSPATH);
 #undef JNI_CLASS_MEMBERS
 
 

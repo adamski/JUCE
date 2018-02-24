@@ -74,7 +74,7 @@ public:
         jassert (url.getScheme() == "content");
         auto* env = getEnv();
 
-        LocalRef<jobject> contentResolver (android.activity.callObjectMethod (JuceAppActivity.getContentResolver));
+        LocalRef<jobject> contentResolver (android.bridge.callObjectMethod (JuceBridge.getContentResolver));
 
         if (contentResolver)
             return LocalRef<jobject> ((env->CallObjectMethod (contentResolver.get(),
@@ -142,7 +142,7 @@ public:
     {
         auto uri = urlToUri (url);
         auto* env = getEnv();
-        LocalRef<jobject> contentResolver (android.activity.callObjectMethod (JuceAppActivity.getContentResolver));
+        LocalRef<jobject> contentResolver (android.bridge.callObjectMethod (JuceBridge.getContentResolver));
 
         if (contentResolver == 0)
             return {};
@@ -166,7 +166,7 @@ private:
     {
         auto uri = urlToUri (url);
         auto* env = getEnv();
-        LocalRef<jobject> contentResolver (android.activity.callObjectMethod (JuceAppActivity.getContentResolver));
+        LocalRef<jobject> contentResolver (android.bridge.callObjectMethod (JuceBridge.getContentResolver));
 
         if (contentResolver)
         {
@@ -250,12 +250,12 @@ private:
         if (getSDKVersion() >= 19)
         {
             auto* env = getEnv();
-            static jmethodID m = (env->GetMethodID (JuceAppActivity, "getExternalFilesDirs",
+            static jmethodID m = (env->GetMethodID (JuceBridge, "getExternalFilesDirs",
                                                     "(Ljava/lang/String;)[Ljava/io/File;"));
             if (m == 0)
                 return {};
 
-            auto paths = convertFileArray (LocalRef<jobject> (android.activity.callObjectMethod (m, nullptr)));
+            auto paths = convertFileArray (LocalRef<jobject> (android.bridge.callObjectMethod (m, nullptr)));
 
             for (auto path : paths)
                 results.add (getMountPointForFile (path));
@@ -356,8 +356,8 @@ private:
     static int getSDKVersion()
     {
         static int sdkVersion
-            = getEnv()->CallStaticIntMethod (JuceAppActivity,
-                                             JuceAppActivity.getAndroidSDKVersion);
+            = getEnv()->CallStaticIntMethod (JuceBridge,
+                                             JuceBridge.getAndroidSDKVersion);
 
         return sdkVersion;
     }
@@ -583,7 +583,7 @@ public:
     SingleMediaScanner (const String& filename)
         : msc (getEnv()->NewObject (MediaScannerConnection,
                                     MediaScannerConnection.constructor,
-                                    android.activity.get(),
+                                    android.bridge.get(),
                                     CreateJavaInterface (this, "android/media/MediaScannerConnection$MediaScannerConnectionClient").get())),
           file (filename)
     {

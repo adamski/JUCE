@@ -1058,7 +1058,8 @@ private:
                && javaSourceLines[javaSourceLines.size() - 2].trim().isEmpty())
             javaSourceLines.remove (javaSourceLines.size() - 1);
 
-        overwriteFileIfDifferentOrThrow (javaDestFile, javaSourceLines.joinIntoString (newLine));
+        if (!javaDestFile.existsAsFile ()) // Don't overwrite this file, maybe set a flag to always overwrite?
+            overwriteFileIfDifferentOrThrow (javaDestFile, javaSourceLines.joinIntoString (newLine));
     }
 
 

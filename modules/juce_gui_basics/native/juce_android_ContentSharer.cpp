@@ -289,7 +289,7 @@ private:
 
     URL copyAssetFileToTemporaryFile (JNIEnv* env, const String& filename)
     {
-        auto resources = LocalRef<jobject> (env->CallObjectMethod (android.activity, JuceAppActivity.getResources));
+        auto resources = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JuceBridge.getResources));
         int fileId = env->CallIntMethod (resources, AndroidResources.getIdentifier, javaString (filename).get(),
                                          javaString ("raw").get(), javaString (packageName).get());
 
@@ -400,8 +400,8 @@ class ContentSharer::ContentSharerNativeImpl  : public ContentSharer::Pimpl,
 public:
     ContentSharerNativeImpl (ContentSharer& cs)
         : owner (cs),
-          packageName (juceString (LocalRef<jstring> ((jstring) getEnv()->CallObjectMethod (android.activity,
-                                                                                            JuceAppActivity.getPackageName)))),
+          packageName (juceString (LocalRef<jstring> ((jstring) getEnv()->CallObjectMethod (android.bridge,
+                                                                                            JuceBridge.getPackageName)))),
           uriBase ("content://" + packageName + ".sharingcontentprovider/")
     {
     }
@@ -445,7 +445,7 @@ public:
         auto chooserIntent = LocalRef<jobject> (env->CallStaticObjectMethod (AndroidIntent, AndroidIntent.createChooser,
                                                                              intent.get(), javaString ("Choose share target").get()));
 
-        env->CallVoidMethod (android.activity, JuceAppActivity.startActivityForResult, chooserIntent.get(), 1003);
+        env->CallVoidMethod (android.bridge, JuceBridge.startActivityForResult, chooserIntent.get(), 1003);
     }
 
     //==============================================================================
@@ -572,8 +572,8 @@ private:
     {
         auto* env = getEnv();
 
-        auto packageManager = LocalRef<jobject> (env->CallObjectMethod (android.activity,
-                                                                        JuceAppActivity.getPackageManager));
+        auto packageManager = LocalRef<jobject> (env->CallObjectMethod (android.bridge,
+                                                                        JuceBridge.getPackageManager));
 
         constexpr int getProviders = 8;
         auto packageInfo = LocalRef<jobject> (env->CallObjectMethod (packageManager,
@@ -635,7 +635,7 @@ private:
                                                                              intent.get(),
                                                                              javaString ("Choose share target").get()));
 
-        env->CallVoidMethod (android.activity, JuceAppActivity.startActivityForResult, chooserIntent.get(), 1003);
+        env->CallVoidMethod (android.bridge, JuceBridge.startActivityForResult, chooserIntent.get(), 1003);
     }
 
     void decrementPendingFileCountAndNotifyOwnerIfReady()

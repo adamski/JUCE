@@ -298,7 +298,7 @@ bool PushNotifications::Notification::isValid() const noexcept
     auto* env = getEnv();
 
     bool isValidForPreApi26 = title.isNotEmpty() && body.isNotEmpty() && identifier.isNotEmpty() && icon.isNotEmpty();
-    bool apiAtLeast26 = env->CallStaticIntMethod (JuceAppActivity, JuceAppActivity.getAndroidSDKVersion) >= 26;
+    bool apiAtLeast26 = env->CallStaticIntMethod (JuceBridge, JuceBridge.getAndroidSDKVersion) >= 26;
 
     if (apiAtLeast26)
         return isValidForPreApi26 && channelId.isNotEmpty();
@@ -393,7 +393,7 @@ struct PushNotifications::Pimpl
 
         const auto notification = localNotificationBundleToJuceNotification (bundle);
 
-        auto packageName  = juceString ((jstring) (android.activity.callObjectMethod (JuceAppActivity.getPackageName)));
+        auto packageName  = juceString ((jstring) (android.bridge.callObjectMethod (JuceBridge.getPackageName)));
 
         String notificationString                = packageName + ".JUCE_NOTIFICATION.";
         String notificationButtonActionString    = packageName + ".JUCE_NOTIFICATION_BUTTON_ACTION.";
@@ -644,8 +644,8 @@ struct PushNotifications::Pimpl
     {
         auto* env = getEnv();
 
-        return LocalRef<jobject> (env->CallObjectMethod (android.activity,
-                                                         JuceAppActivity.getSystemService,
+        return LocalRef<jobject> (env->CallObjectMethod (android.bridge,
+                                                         JuceBridge.getSystemService,
                                                          javaString ("notification").get()));
     }
 
@@ -680,7 +680,7 @@ struct PushNotifications::Pimpl
 
         jmethodID builderConstructor = 0;
 
-        const bool apiAtLeast26 = env->CallStaticIntMethod (JuceAppActivity, JuceAppActivity.getAndroidSDKVersion) >= 26;
+        const bool apiAtLeast26 = env->CallStaticIntMethod (JuceBridge, JuceBridge.getAndroidSDKVersion) >= 26;
 
         if (apiAtLeast26)
             builderConstructor = env->GetMethodID (builderClass, "<init>", "(Landroid/content/Context;Ljava/lang/String;)V");
@@ -694,19 +694,19 @@ struct PushNotifications::Pimpl
 
         if (apiAtLeast26)
             return LocalRef<jobject> (env->NewObject (builderClass, builderConstructor,
-                                                      android.activity.get(), javaString (n.channelId).get()));
+                                                      android.bridge.get(), javaString (n.channelId).get()));
 
-        return LocalRef<jobject> (env->NewObject (builderClass, builderConstructor, android.activity.get()));
+        return LocalRef<jobject> (env->NewObject (builderClass, builderConstructor, android.bridge.get()));
     }
 
     static void setupRequiredFields (const PushNotifications::Notification& n, LocalRef<jobject>& notificationBuilder)
     {
         auto* env = getEnv();
 
-        auto activityClass = LocalRef<jobject> (env->CallObjectMethod (android.activity, JavaObject.getClass));
-        auto notifyIntent  = LocalRef<jobject> (env->NewObject (AndroidIntent, AndroidIntent.constructorWithContextAndClass, android.activity.get(), activityClass.get()));
+        auto activityClass = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JuceBridge.getActivityContext.getClass)); // Not tested! TODO
+        auto notifyIntent  = LocalRef<jobject> (env->NewObject (AndroidIntent, AndroidIntent.constructorWithContextAndClass, android.bridge.get(), activityClass.get()));
 
-        auto packageNameString  = LocalRef<jstring> ((jstring) (android.activity.callObjectMethod (JuceAppActivity.getPackageName)));
+        auto packageNameString  = LocalRef<jstring> ((jstring) (android.bridge.callObjectMethod (JuceBridge.getPackageName)));
         auto actionStringSuffix = javaString (".JUCE_NOTIFICATION." + n.identifier);
         auto actionString       = LocalRef<jstring> ((jstring)env->CallObjectMethod (packageNameString, JavaString.concat, actionStringSuffix.get()));
 
@@ -716,7 +716,7 @@ struct PushNotifications::Pimpl
 
         auto notifyPendingIntent = LocalRef<jobject> (env->CallStaticObjectMethod (AndroidPendingIntent,
                                                                                    AndroidPendingIntent.getActivity,
-                                                                                   android.activity.get(),
+                                                                                   android.bridge.get(),
                                                                                    1002,
                                                                                    notifyIntent.get(),
                                                                                    0));
@@ -725,7 +725,7 @@ struct PushNotifications::Pimpl
         env->CallObjectMethod (notificationBuilder, NotificationBuilderBase.setContentText,   javaString (n.body).get());
         env->CallObjectMethod (notificationBuilder, NotificationBuilderBase.setContentIntent, notifyPendingIntent.get());
 
-        auto resources = LocalRef<jobject> (env->CallObjectMethod (android.activity, JuceAppActivity.getResources));
+        auto resources = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JuceBridge.getResources));
         const int iconId = env->CallIntMethod (resources, AndroidResources.getIdentifier, javaString (n.icon).get(),
                                                javaString ("raw").get(), packageNameString.get());
 
@@ -936,10 +936,10 @@ struct PushNotifications::Pimpl
     {
         auto* env = getEnv();
 
-        auto activityClass = LocalRef<jobject> (env->CallObjectMethod (android.activity, JavaObject.getClass));
-        auto deleteIntent  = LocalRef<jobject> (env->NewObject (AndroidIntent, AndroidIntent.constructorWithContextAndClass, android.activity.get(), activityClass.get()));
+        auto activityClass = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JavaObject.getClass));
+        auto deleteIntent  = LocalRef<jobject> (env->NewObject (AndroidIntent, AndroidIntent.constructorWithContextAndClass, android.bridge.get(), activityClass.get()));
 
-        auto packageNameString  = LocalRef<jstring> ((jstring) (android.activity.callObjectMethod (JuceAppActivity.getPackageName)));
+        auto packageNameString  = LocalRef<jstring> ((jstring) (android.bridge.callObjectMethod (JuceBridge.getPackageName)));
         auto actionStringSuffix = javaString (".JUCE_NOTIFICATION_DELETED." + n.identifier);
         auto actionString       = LocalRef<jstring> ((jstring)env->CallObjectMethod (packageNameString, JavaString.concat, actionStringSuffix.get()));
 
@@ -948,7 +948,7 @@ struct PushNotifications::Pimpl
 
         auto deletePendingIntent = LocalRef<jobject> (env->CallStaticObjectMethod (AndroidPendingIntent,
                                                                                    AndroidPendingIntent.getActivity,
-                                                                                   android.activity.get(),
+                                                                                   android.bridge.get(),
                                                                                    1002,
                                                                                    deleteIntent.get(),
                                                                                    0));
@@ -965,12 +965,12 @@ struct PushNotifications::Pimpl
 
         for (const auto& action : n.actions)
         {
-            auto activityClass = LocalRef<jobject> (env->CallObjectMethod (android.activity, JavaObject.getClass));
-            auto notifyIntent  = LocalRef<jobject> (env->NewObject (AndroidIntent, AndroidIntent.constructorWithContextAndClass, android.activity.get(), activityClass.get()));
+            auto activityClass = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JavaObject.getClass));
+            auto notifyIntent  = LocalRef<jobject> (env->NewObject (AndroidIntent, AndroidIntent.constructorWithContextAndClass, android.bridge.get(), activityClass.get()));
 
             const bool isTextStyle = action.style == PushNotifications::Notification::Action::text;
 
-            auto packageNameString   = LocalRef<jstring> ((jstring) (android.activity.callObjectMethod (JuceAppActivity.getPackageName)));
+            auto packageNameString   = LocalRef<jstring> ((jstring) (android.bridge.callObjectMethod (JuceBridge.getPackageName)));
             const String notificationActionString = isTextStyle ? ".JUCE_NOTIFICATION_TEXT_INPUT_ACTION." : ".JUCE_NOTIFICATION_BUTTON_ACTION.";
             auto actionStringSuffix  = javaString (notificationActionString + n.identifier + "." + String (actionIndex) + "." + action.title);
             auto actionString        = LocalRef<jstring> ((jstring)env->CallObjectMethod (packageNameString, JavaString.concat, actionStringSuffix.get()));
@@ -981,12 +981,12 @@ struct PushNotifications::Pimpl
 
             auto notifyPendingIntent = LocalRef<jobject> (env->CallStaticObjectMethod (AndroidPendingIntent,
                                                                                        AndroidPendingIntent.getActivity,
-                                                                                       android.activity.get(),
+                                                                                       android.bridge.get(),
                                                                                        1002,
                                                                                        notifyIntent.get(),
                                                                                        0));
 
-            auto resources = LocalRef<jobject> (env->CallObjectMethod (android.activity, JuceAppActivity.getResources));
+            auto resources = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JuceBridge.getResources));
             int iconId = env->CallIntMethod (resources, AndroidResources.getIdentifier, javaString (action.icon).get(),
                                              javaString ("raw").get(), packageNameString.get());
 
@@ -1055,9 +1055,9 @@ struct PushNotifications::Pimpl
     {
         auto* env = getEnv();
 
-        auto packageNameString = LocalRef<jstring> ((jstring) (android.activity.callObjectMethod (JuceAppActivity.getPackageName)));
+        auto packageNameString = LocalRef<jstring> ((jstring) (android.bridge.callObjectMethod (JuceBridge.getPackageName)));
 
-        auto resources = LocalRef<jobject> (env->CallObjectMethod (android.activity, JuceAppActivity.getResources));
+        auto resources = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JuceBridge.getResources));
         const int id = env->CallIntMethod (resources, AndroidResources.getIdentifier, javaString (url.toString (true)).get(),
                                            javaString ("raw").get(), packageNameString.get());
 
@@ -1450,7 +1450,7 @@ struct PushNotifications::Pimpl
       #if __ANDROID_API__ >= 26
         auto* env = getEnv();
 
-        if (env->CallStaticIntMethod (JuceAppActivity, JuceAppActivity.getAndroidSDKVersion) < 26)
+        if (env->CallStaticIntMethod (JuceBridge, JuceBridge.getAndroidSDKVersion) < 26)
             return;
 
         auto notificationManager = getNotificationManager();
@@ -1534,8 +1534,8 @@ struct PushNotifications::Pimpl
     {
         auto* env = getEnv();
 
-        String packageName = includePackageName ? juceString ((jstring) env->CallObjectMethod (android.activity,
-                                                                                               JuceAppActivity.getPackageName))
+        String packageName = includePackageName ? juceString ((jstring) env->CallObjectMethod (android.bridge,
+                                                                                               JuceBridge.getPackageName))
                                                 : String{};
 
         String intentAction = juceString ((jstring) env->CallObjectMethod (intent, AndroidIntent.getAction));

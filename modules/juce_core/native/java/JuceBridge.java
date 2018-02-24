@@ -85,6 +85,18 @@ public class JuceBridge
         juceViewHolder = new JuceViewHolder(c);
     }
 
+    public Context getActivityContext()
+    {
+        return activityContext;
+    }
+
+    // This may be better to use in most cases? 
+    // TODO: Check the class is actually an instance of Activity
+    public Activity getActivity()
+    {
+        return (Activity) activityContext;
+    }
+
     public boolean appInitialised()
     {
         return hasInitialised();

@@ -51,14 +51,12 @@ namespace juce
 extern void juce_contentSharingCompleted (int);
 
 //==============================================================================
-JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env, jobject juceBridge,
-        jstring appFile, jstring appDataDir))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, launchApp, void, (JNIEnv* env, jobject activity,
+                                                                      jstring appFile, jstring appDataDir))
 {
     setEnv (env);
-    DBG ("setEnv");
 
-    android.initialise (env, juceBridge, appFile, appDataDir);
-    DBG ("initialise");
+    android.initialise (env, activity, appFile, appDataDir);
 
     DBG (SystemStats::getJUCEVersion());
 
@@ -68,10 +66,8 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env,
 
     if (JUCEApplicationBase* app = JUCEApplicationBase::createInstance())
     {
-        if (! app->initialiseApp()) {
-            DBG ("app->initialiseApp() returned false, calling shutdownApp...");
+        if (! app->initialiseApp())
             exit (app->shutdownApp());
-        }
     }
     else
     {
@@ -81,14 +77,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env,
     jassert (MessageManager::getInstance()->isThisTheMessageThread());
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, hasInitialised, bool, (JNIEnv* env, jobject juceBridge))
-{
-    setEnv (env);
-
-    return android.initialised;
-}
-
-JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, suspendApp, void, (JNIEnv* env, jobject juceBridge))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, suspendApp, void, (JNIEnv* env, jobject))
 {
     setEnv (env);
 
@@ -96,7 +85,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, suspendApp, void, (JNIEnv* env
         app->suspended();
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, resumeApp, void, (JNIEnv* env, jobject juceBridge))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, resumeApp, void, (JNIEnv* env, jobject))
 {
     setEnv (env);
 
@@ -104,7 +93,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, resumeApp, void, (JNIEnv* env,
         app->resumed();
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, quitApp, void, (JNIEnv* env, jobject juceBridge))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, quitApp, void, (JNIEnv* env, jobject))
 {
     setEnv (env);
 
@@ -216,14 +205,14 @@ DECLARE_JNI_CLASS (CanvasMinimal, "android/graphics/Canvas");
 
 //==============================================================================
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
- METHOD (setViewName,   "setViewName",      "(Ljava/lang/String;)V") \
- METHOD (setVisible,    "setVisible",       "(Z)V") \
- METHOD (isVisible,     "isVisible",        "()Z") \
- METHOD (containsPoint, "containsPoint",    "(II)Z") \
- METHOD (showKeyboard,  "showKeyboard",     "(Ljava/lang/String;)V") \
+ METHOD (setViewName,                 "setViewName",                 "(Ljava/lang/String;)V") \
+ METHOD (setVisible,                  "setVisible",                  "(Z)V") \
+ METHOD (isVisible,                   "isVisible",                   "()Z") \
+ METHOD (containsPoint,               "containsPoint",               "(II)Z") \
+ METHOD (showKeyboard,                "showKeyboard",                "(Ljava/lang/String;)V") \
  METHOD (setSystemUiVisibilityCompat, "setSystemUiVisibilityCompat", "(I)V") \
 
-DECLARE_JNI_CLASS (ComponentPeerView, JUCE_ANDROID_BRIDGE_CLASSPATH "$ComponentPeerView");
+DECLARE_JNI_CLASS (ComponentPeerView, JUCE_ANDROID_ACTIVITY_CLASSPATH "$ComponentPeerView");
 #undef JNI_CLASS_MEMBERS
 
 
@@ -241,12 +230,9 @@ public:
     {
         // NB: must not put this in the initialiser list, as it invokes a callback,
         // which will fail if the peer is only half-constructed.
-        DBG ("AndroidComponentPeer constructor: "+component.getName());
         view = GlobalRef (android.bridge.callObjectMethod (JuceBridge.createNewView,
-                                                           (jboolean) component.isOpaque(),
-                                                           (jlong) this,
-                (jstring) javaString(component.getName())));
-
+                                                             (jboolean) component.isOpaque(),
+                                                             (jlong) this));
 
         if (isFocused())
             handleFocusGain();
@@ -430,7 +416,7 @@ public:
             if (! navBarsHidden && ! isTimerRunning())
             {
                 startTimer (500);
-        }
+            }
         }
         else
         {
@@ -789,7 +775,7 @@ AndroidComponentPeer* AndroidComponentPeer::frontWindow = nullptr;
 
 //==============================================================================
 #define JUCE_VIEW_CALLBACK(returnType, javaMethodName, params, juceMethodInvocation) \
-  JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_BRIDGE_CLASSNAME, _00024ComponentPeerView), javaMethodName, returnType, params) \
+  JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_ACTIVITY_CLASSNAME, _00024ComponentPeerView), javaMethodName, returnType, params) \
   { \
       setEnv (env); \
       if (AndroidComponentPeer* peer = (AndroidComponentPeer*) (pointer_sized_uint) host) \
@@ -848,7 +834,7 @@ Desktop::DisplayOrientation Desktop::getCurrentOrientation() const
 
     JNIEnv* env = getEnv();
     LocalRef<jstring> windowServiceString (javaString ("window"));
-    LocalRef<jobject> windowManager = LocalRef<jobject> (env->CallObjectMethod (android.activity, JuceAppActivity.getSystemService, windowServiceString.get()));
+    LocalRef<jobject> windowManager = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JuceBridge.getSystemService, windowServiceString.get()));
 
     if (windowManager.get() != 0)
     {
@@ -920,8 +906,7 @@ JUCE_API void JUCE_CALLTYPE Process::hide()
         env->CallObjectMethod (intent, AndroidIntent.setAction,   javaString ("android.intent.action.MAIN")  .get());
         env->CallObjectMethod (intent, AndroidIntent.addCategory, javaString ("android.intent.category.HOME").get());
 
-        GlobalRef activity = GlobalRef (android.bridge.callObjectMethod (JuceBridge.getActivityContext()));
-        android.bridge.callVoidMethod (activity.startActivity, intent.get()); // This is just guesswork, expecting to fail
+        android.bridge.callVoidMethod (JuceBridge.startActivity, intent.get());
     }
 }
 
@@ -978,7 +963,7 @@ int JUCE_CALLTYPE NativeMessageBox::showYesNoBox (AlertWindow::AlertIconType /*i
     return 0;
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, alertDismissed, void, (JNIEnv* env, jobject /*activity*/,
+JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, alertDismissed, void, (JNIEnv* env, jobject /*activity*/,
                                                                            jlong callbackAsLong, jint result))
 {
     setEnv (env);
@@ -1040,6 +1025,7 @@ static jint getAndroidOrientationFlag (int orientations) noexcept
 
 void Desktop::allowedOrientationsChanged()
 {
+    // TODO call getActivity() 
     android.bridge.callVoidMethod (JuceBridge.setRequestedOrientation,
                                      getAndroidOrientationFlag (allowedOrientations));
 }
@@ -1064,7 +1050,7 @@ void Desktop::Displays::findDisplays (float masterScale)
     displays.add (d);
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, setScreenSize, void, (JNIEnv* env, jobject juceBridge,
+JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, setScreenSize, void, (JNIEnv* env, jobject /*activity*/,
                                                                           jint screenWidth, jint screenHeight,
                                                                           jint dpi))
 {
