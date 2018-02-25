@@ -51,12 +51,12 @@ namespace juce
 extern void juce_contentSharingCompleted (int);
 
 //==============================================================================
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, launchApp, void, (JNIEnv* env, jobject activity,
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, launchApp, void, (JNIEnv* env, jobject bridge,
                                                                       jstring appFile, jstring appDataDir))
 {
     setEnv (env);
 
-    android.initialise (env, activity, appFile, appDataDir);
+    android.initialise (env, bridge, appFile, appDataDir);
 
     DBG (SystemStats::getJUCEVersion());
 
@@ -77,7 +77,15 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, launchApp, void, (JNIEnv* en
     jassert (MessageManager::getInstance()->isThisTheMessageThread());
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, suspendApp, void, (JNIEnv* env, jobject))
+
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, hasInitialised, bool, (JNIEnv* env, jobject))
+{
+    setEnv (env);
+
+    return android.initialised;
+}
+
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, suspendApp, void, (JNIEnv* env, jobject))
 {
     setEnv (env);
 
@@ -85,7 +93,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, suspendApp, void, (JNIEnv* e
         app->suspended();
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, resumeApp, void, (JNIEnv* env, jobject))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, resumeApp, void, (JNIEnv* env, jobject))
 {
     setEnv (env);
 
@@ -93,7 +101,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, resumeApp, void, (JNIEnv* en
         app->resumed();
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, quitApp, void, (JNIEnv* env, jobject))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, quitApp, void, (JNIEnv* env, jobject))
 {
     setEnv (env);
 
@@ -106,7 +114,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, quitApp, void, (JNIEnv* env,
     env->CallStaticVoidMethod (systemClass, exitMethod, 0);
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, appActivityResult, void, (JNIEnv* env, jobject, jint requestCode, jint resultCode, jobject intentData))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, appActivityResult, void, (JNIEnv* env, jobject, jint requestCode, jint resultCode, jobject intentData))
 {
     setEnv (env);
 
@@ -126,7 +134,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, appActivityResult, void, (JN
     ignoreUnused (intentData, requestCode);
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, appNewIntent, void, (JNIEnv* env, jobject, jobject intentData))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, appNewIntent, void, (JNIEnv* env, jobject, jobject intentData))
 {
     setEnv (env);
 
@@ -1058,7 +1066,7 @@ void Desktop::Displays::findDisplays (float masterScale)
     displays.add (d);
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, setScreenSize, void, (JNIEnv* env, jobject /*activity*/,
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, setScreenSize, void, (JNIEnv* env, jobject /*activity*/,
                                                                           jint screenWidth, jint screenHeight,
                                                                           jint dpi))
 {
