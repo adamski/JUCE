@@ -331,6 +331,9 @@ extern AndroidSystem android;
  METHOD (unbindService,                   "unbindService",                   "(Landroid/content/ServiceConnection;)V") \
  METHOD (startIntentSenderForResult,      "startIntentSenderForResult",      "(Landroid/content/IntentSender;ILandroid/content/Intent;III)V") \
  METHOD (moveTaskToBack,                  "moveTaskToBack",                  "(Z)Z") \
+ METHOD (getActivity,                     "getActivity",                     "()Landroid/app/Activity;") \
+ METHOD (getActivityContext,              "getActivityContext",              "()Landroid/context/Context;") \
+ METHOD (setActivityContext,              "setActivityContext",              "(Landroid/context/Context;)V") \
  METHOD (startActivity,                   "startActivity",                   "(Landroid/content/Intent;)V") \
  METHOD (startActivityForResult,          "startActivityForResult",          "(Landroid/content/Intent;I)V") \
  METHOD (getContentResolver,              "getContentResolver",              "()Landroid/content/ContentResolver;") \

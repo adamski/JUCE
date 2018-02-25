@@ -294,7 +294,7 @@ public:
         JNIEnv* env = getEnv();
 
         jobject matrix = GraphicsHelpers::createMatrix (env, AffineTransform::scale (referenceFontToUnits).followedBy (t));
-        jintArray maskData = (jintArray) android.bridge.callObjectMethod (JuceApp.renderGlyph, ch1, ch2, paint.get(), matrix, rect.get());
+        jintArray maskData = (jintArray) android.bridge.callObjectMethod (JuceBridge.renderGlyph, ch1, ch2, paint.get(), matrix, rect.get());
 
         env->DeleteLocalRef (matrix);
 

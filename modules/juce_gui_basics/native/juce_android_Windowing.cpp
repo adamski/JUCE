@@ -1025,9 +1025,17 @@ static jint getAndroidOrientationFlag (int orientations) noexcept
 
 void Desktop::allowedOrientationsChanged()
 {
-    // TODO call getActivity() 
-    android.bridge.callVoidMethod (JuceBridge.setRequestedOrientation,
-                                     getAndroidOrientationFlag (allowedOrientations));
+    //auto activity = GlobalRef (android.bridge.callObjectMethod (JuceBridge.getActivity));
+
+    auto* env = getEnv();
+    auto activity = LocalRef<jobject> (android.bridge.callObjectMethod (JuceBridge.getActivity));
+    auto activityClass = LocalRef<jclass> (env->GetObjectClass (activity));
+
+    auto setRequestedOrientationMethod =
+            env->GetMethodID (activityClass, "setRequestedOrientation", "(I)V");
+
+    if (setRequestedOrientationMethod != 0)
+        env->CallVoidMethod (activity, setRequestedOrientationMethod);
 }
 
 //==============================================================================

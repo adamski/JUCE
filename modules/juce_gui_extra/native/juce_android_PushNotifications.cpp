@@ -703,7 +703,9 @@ struct PushNotifications::Pimpl
     {
         auto* env = getEnv();
 
-        auto activityClass = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JuceBridge.getActivityContext.getClass)); // Not tested! TODO
+        auto activity = LocalRef<jobject> (android.bridge.callObjectMethod (JuceBridge.getActivity));
+        auto activityClass = LocalRef<jclass> (env->GetObjectClass (activity));
+
         auto notifyIntent  = LocalRef<jobject> (env->NewObject (AndroidIntent, AndroidIntent.constructorWithContextAndClass, android.bridge.get(), activityClass.get()));
 
         auto packageNameString  = LocalRef<jstring> ((jstring) (android.bridge.callObjectMethod (JuceBridge.getPackageName)));

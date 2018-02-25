@@ -24,6 +24,8 @@
   ==============================================================================
 */
 
+#include <juce_core/native/juce_android_JNIHelpers.h>
+
 namespace juce
 {
 
@@ -37,7 +39,7 @@ public:
             currentFileChooser = this;
             auto* env = getEnv();
 
-            auto sdkVersion = env->CallStaticIntMethod (JuceAppActivity, JuceAppActivity.getAndroidSDKVersion);
+            auto sdkVersion = env->CallStaticIntMethod (JuceBridge, JuceBridge.getAndroidSDKVersion);
             auto saveMode           = ((flags & FileBrowserComponent::saveMode) != 0);
             auto selectsDirectories = ((flags & FileBrowserComponent::canSelectDirectories) != 0);
 
@@ -147,7 +149,7 @@ public:
     void launch() override
     {
         if (currentFileChooser != nullptr)
-            android.activity.callVoidMethod (JuceAppActivity.startActivityForResult, intent.get(), /*READ_REQUEST_CODE*/ 42);
+            android.bridge.callVoidMethod (JuceBridge.startActivityForResult, intent.get(), /*READ_REQUEST_CODE*/ 42);
         else
             jassertfalse; // There is already a file chooser running
     }

@@ -134,8 +134,8 @@ LocalRef<jobject> CreateJavaInterface (AndroidInterfaceImplementer* implementer,
         }
     }
 
-    auto invocationHandler = LocalRef<jobject> (env->CallObjectMethod (android.activity,
-                                                                       JuceAppActivity.createInvocationHandler,
+    auto invocationHandler = LocalRef<jobject> (env->CallObjectMethod (android.bridge,
+                                                                       JuceBridge.createInvocationHandler,
                                                                        reinterpret_cast<jlong> (implementer)));
 
     // CreateJavaInterface() is expected to be called just once for a given implementer
@@ -166,8 +166,8 @@ AndroidInterfaceImplementer::~AndroidInterfaceImplementer()
 
 {
     if (invocationHandler != nullptr)
-        getEnv()->CallVoidMethod (android.activity,
-                                  JuceAppActivity.invocationHandlerContextDeleted,
+        getEnv()->CallVoidMethod (android.bridge,
+                                  JuceBridge.invocationHandlerContextDeleted,
                                   invocationHandler.get());
 }
 
