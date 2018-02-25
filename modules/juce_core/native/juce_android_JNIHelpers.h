@@ -314,7 +314,7 @@ extern AndroidSystem android;
  METHOD (getScreenSaver,          "getScreenSaver",       "()Z") \
  METHOD (getAndroidMidiDeviceManager, "getAndroidMidiDeviceManager", "()L" JUCE_ANDROID_BRIDGE_CLASSPATH "$MidiDeviceManager;") \
  METHOD (getAndroidBluetoothManager, "getAndroidBluetoothManager", "()L" JUCE_ANDROID_BRIDGE_CLASSPATH "$BluetoothManager;") \
- METHOD (getAndroidSDKVersion,    "getAndroidSDKVersion", "()I") \
+ STATICMETHOD (getAndroidSDKVersion,      "getAndroidSDKVersion",            "()I") \
  METHOD (audioManagerGetProperty, "audioManagerGetProperty", "(Ljava/lang/String;)Ljava/lang/String;") \
  METHOD (hasSystemFeature,         "hasSystemFeature", "(Ljava/lang/String;)Z" ) \
  METHOD (requestRuntimePermission, "requestRuntimePermission", "(IJ)V" ) \
