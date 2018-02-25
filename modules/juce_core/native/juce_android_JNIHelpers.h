@@ -320,7 +320,6 @@ extern AndroidSystem android;
  METHOD (requestRuntimePermission, "requestRuntimePermission", "(IJ)V" ) \
  METHOD (isPermissionGranted,     "isPermissionGranted", "(I)Z" ) \
  METHOD (isPermissionDeclaredInManifest, "isPermissionDeclaredInManifest", "(I)Z" ) \
- METHOD (getAssets,                       "getAssets",                       "()Landroid/content/res/AssetManager;") \
  METHOD (getSystemService,                "getSystemService",                "(Ljava/lang/String;)Ljava/lang/Object;") \
  METHOD (getPackageManager,               "getPackageManager",               "()Landroid/content/pm/PackageManager;") \
  METHOD (getPackageName,                  "getPackageName",                  "()Ljava/lang/String;") \
