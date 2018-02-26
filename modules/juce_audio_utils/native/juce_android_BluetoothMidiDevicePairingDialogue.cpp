@@ -44,7 +44,7 @@ struct AndroidBluetoothMidiInterface
     static void startStopScan (bool startScanning)
     {
         JNIEnv* env = getEnv();
-        LocalRef<jobject> btManager (android.activity.callObjectMethod (JuceAppActivity.getAndroidBluetoothManager));
+        LocalRef<jobject> btManager (android.bridge.callObjectMethod (JuceBridge.getAndroidBluetoothManager));
 
         if (btManager.get() != nullptr)
             env->CallVoidMethod (btManager.get(), AndroidBluetoothManager.startStopScan, (jboolean) (startScanning ? 1 : 0));
