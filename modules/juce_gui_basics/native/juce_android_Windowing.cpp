@@ -840,13 +840,23 @@ Desktop::DisplayOrientation Desktop::getCurrentOrientation() const
         ROTATION_270 = 3
     };
 
-    JNIEnv* env = getEnv();
+    auto* env = getEnv();
     LocalRef<jstring> windowServiceString (javaString ("window"));
-    LocalRef<jobject> windowManager = LocalRef<jobject> (env->CallObjectMethod (android.bridge, JuceBridge.getSystemService, windowServiceString.get()));
+
+    auto activity = LocalRef<jobject> (android.bridge.callObjectMethod (JuceBridge.getActivity));
+    auto activityClass = LocalRef<jclass> (env->GetObjectClass (activity));
+
+    auto getSystemServiceMethod =
+            env->GetMethodID (activityClass, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
+
+    jassert (getSystemServiceMethod != 0);
+
+    auto windowManager =
+            LocalRef<jobject> (env->CallObjectMethod (activity, getSystemServiceMethod, windowServiceString.get()));
 
     if (windowManager.get() != 0)
     {
-        LocalRef<jobject> display = LocalRef<jobject> (env->CallObjectMethod (windowManager, WindowManager.getDefaultDisplay));
+        auto display = LocalRef<jobject> (env->CallObjectMethod (windowManager, WindowManager.getDefaultDisplay));
 
         if (display.get() != 0)
         {
