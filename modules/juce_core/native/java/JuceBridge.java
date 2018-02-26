@@ -2,12 +2,16 @@ package com.juce;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
+import android.content.ServiceConnection;
 import android.content.res.Configuration;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.media.MediaScannerConnection;
 import android.net.http.SslError;
 import android.net.Uri;
@@ -1499,6 +1503,75 @@ public class JuceBridge
     public static final String getMoviesFolder()     { return getFileLocation (Environment.DIRECTORY_MOVIES); }
     public static final String getDownloadsFolder()  { return getFileLocation (Environment.DIRECTORY_DOWNLOADS); }
 
+    // Direct access to Activity methods
+
+    public Object getSystemService (String name)
+    {
+        return getActivityContext().getSystemService (name);
+    }
+
+    public PackageManager getPackageManager()
+    {
+        return getActivityContext().getPackageManager();
+    }
+    
+    public String getPackageName()
+    {
+        return getActivityContext().getPackageName();
+    }
+
+    public Resources getResources()
+    {
+        return getActivityContext().getResources();
+    }
+
+    public boolean bindService (Intent intent, ServiceConnection serviceConnection, int i)
+    {
+        return getActivityContext().bindService (intent, serviceConnection, i);
+    }
+
+    public void unbindService (ServiceConnection serviceConnection)
+    {
+        getActivityContext().unbindService (serviceConnection);
+    }
+
+    public void startIntentSenderForResult (IntentSender intent,
+                                            int requestCode,
+                                            Intent fillInIntent,
+                                            int flagsMask,
+                                            int flagsValues,
+                                            int extraFlags)
+    {
+        try
+        {
+            getActivity().startIntentSenderForResult(intent, requestCode, fillInIntent, flagsMask,
+                    flagsValues, extraFlags);
+        }
+        catch (IntentSender.SendIntentException e)
+        {
+            Log.e ("JuceBridge", e.getMessage());
+        }
+    }
+
+    public boolean moveTaskToBack (boolean nonRoot)
+    {
+        return getActivity().moveTaskToBack (nonRoot);
+    }
+
+    public void startActivity (Intent intent)
+    {
+        getActivityContext().startActivity (intent);
+    }
+
+    public void startActivityForResult (Intent intent, int requestCode)
+    {
+        getActivity().startActivityForResult (intent, requestCode);
+    }
+
+    public ContentResolver getContentResolver()
+    {
+        return getActivityContext().getContentResolver();
+    }
 
     public void setRequestedOrientation (int requestedOrientation)
     {

@@ -320,6 +320,7 @@ extern AndroidSystem android;
  METHOD (requestRuntimePermission, "requestRuntimePermission", "(IJ)V" ) \
  METHOD (isPermissionGranted,     "isPermissionGranted", "(I)Z" ) \
  METHOD (isPermissionDeclaredInManifest, "isPermissionDeclaredInManifest", "(I)Z" ) \
+ METHOD (getSystemService,                "getSystemService",                "(Ljava/lang/String;)Ljava/lang/Object;") \
  METHOD (getPackageManager,               "getPackageManager",               "()Landroid/content/pm/PackageManager;") \
  METHOD (getPackageName,                  "getPackageName",                  "()Ljava/lang/String;") \
  METHOD (getResources,                    "getResources",                    "()Landroid/content/res/Resources;") \
@@ -330,8 +331,8 @@ extern AndroidSystem android;
  METHOD (startIntentSenderForResult,      "startIntentSenderForResult",      "(Landroid/content/IntentSender;ILandroid/content/Intent;III)V") \
  METHOD (moveTaskToBack,                  "moveTaskToBack",                  "(Z)Z") \
  METHOD (getActivity,                     "getActivity",                     "()Landroid/app/Activity;") \
- METHOD (getActivityContext,              "getActivityContext",              "()Landroid/context/Context;") \
- METHOD (setActivityContext,              "setActivityContext",              "(Landroid/context/Context;)V") \
+ METHOD (getActivityContext,              "getActivityContext",              "()Landroid/content/Context;") \
+ METHOD (setActivityContext,              "setActivityContext",              "(Landroid/content/Context;)V") \
  METHOD (startActivity,                   "startActivity",                   "(Landroid/content/Intent;)V") \
  METHOD (startActivityForResult,          "startActivityForResult",          "(Landroid/content/Intent;I)V") \
  METHOD (getContentResolver,              "getContentResolver",              "()Landroid/content/ContentResolver;") \

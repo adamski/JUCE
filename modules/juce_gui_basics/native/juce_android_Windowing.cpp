@@ -220,7 +220,7 @@ DECLARE_JNI_CLASS (CanvasMinimal, "android/graphics/Canvas");
  METHOD (showKeyboard,                "showKeyboard",                "(Ljava/lang/String;)V") \
  METHOD (setSystemUiVisibilityCompat, "setSystemUiVisibilityCompat", "(I)V") \
 
-DECLARE_JNI_CLASS (ComponentPeerView, JUCE_ANDROID_ACTIVITY_CLASSPATH "$ComponentPeerView");
+DECLARE_JNI_CLASS (ComponentPeerView, JUCE_ANDROID_BRIDGE_CLASSPATH "$ComponentPeerView");
 #undef JNI_CLASS_MEMBERS
 
 
@@ -843,16 +843,9 @@ Desktop::DisplayOrientation Desktop::getCurrentOrientation() const
     auto* env = getEnv();
     LocalRef<jstring> windowServiceString (javaString ("window"));
 
-    auto activity = LocalRef<jobject> (android.bridge.callObjectMethod (JuceBridge.getActivity));
-    auto activityClass = LocalRef<jclass> (env->GetObjectClass (activity));
-
-    auto getSystemServiceMethod =
-            env->GetMethodID (activityClass, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
-
-    jassert (getSystemServiceMethod != 0);
-
-    auto windowManager =
-            LocalRef<jobject> (env->CallObjectMethod (activity, getSystemServiceMethod, windowServiceString.get()));
+    auto windowManager = LocalRef<jobject> (env->CallObjectMethod (android.bridge,
+                                                         JuceBridge.getSystemService,
+                                                         javaString ("window").get()));
 
     if (windowManager.get() != 0)
     {
@@ -981,7 +974,7 @@ int JUCE_CALLTYPE NativeMessageBox::showYesNoBox (AlertWindow::AlertIconType /*i
     return 0;
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, alertDismissed, void, (JNIEnv* env, jobject /*activity*/,
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, alertDismissed, void, (JNIEnv* env, jobject /*activity*/,
                                                                            jlong callbackAsLong, jint result))
 {
     setEnv (env);
