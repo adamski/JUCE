@@ -1769,7 +1769,7 @@ private:
         setAttributeIfNotPresent (*app, "android:label", "@string/app_name");
 
         if (androidApplicationClass.get().toString().trim() != String::empty)
-            app->setAttribute ("android:application", androidApplicationClass.get().toString());
+            app->setAttribute ("android:name", androidApplicationClass.get().toString());
 
         if (androidTheme.get().toString().isNotEmpty())
             setAttributeIfNotPresent (*app, "android:theme", androidTheme.get());
