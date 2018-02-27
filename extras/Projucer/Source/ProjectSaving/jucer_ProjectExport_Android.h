@@ -877,6 +877,7 @@ private:
         props.add (new TextPropertyComponent (androidActivityClass, "Android Activity class name", 256, false),
                    "The full java class name to use for the app's Activity class.");
 
+        // TODO: Propose removal of the following two options; if a user is customing the Activity, they would do so manually
         props.add (new TextPropertyComponent (androidActivitySubClassName, "Android Activity sub-class name", 256, false),
                    "If not empty, specifies the Android Activity class name stored in the app's manifest. "
                    "Use this if you would like to use your own Android Activity sub-class.");
