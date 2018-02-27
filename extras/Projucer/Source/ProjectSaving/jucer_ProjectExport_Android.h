@@ -101,7 +101,7 @@ public:
     }
 
     //==============================================================================
-    ValueWithDefault androidJavaLibs, androidRepositories, androidDependencies, androidScreenOrientation, androidActivityClass,
+    ValueWithDefault androidJavaLibs, androidRepositories, androidDependencies, androidScreenOrientation, androidActivityClass, androidApplicationClass,
                      androidActivitySubClassName, androidActivityBaseClassName, androidManifestCustomXmlElements, androidVersionCode,
                      androidMinimumSDK, androidTargetSDK, androidCompileSDK, androidTheme, androidSharedLibraries, androidStaticLibraries,
                      androidExtraAssetsFolder, androidInternetNeeded, androidMicNeeded, androidBluetoothNeeded, androidExternalReadPermission,
@@ -119,6 +119,7 @@ public:
           androidActivityClass                 (settings, Ids::androidActivityClass,                 getUndoManager(), createDefaultClassName()),
           androidActivitySubClassName          (settings, Ids::androidActivitySubClassName,          getUndoManager()),
           androidActivityBaseClassName         (settings, Ids::androidActivityBaseClassName,         getUndoManager(), "Activity"),
+          androidApplicationClass              (settings, Ids::androidApplicationClass,              getUndoManager()),
           androidManifestCustomXmlElements     (settings, Ids::androidManifestCustomXmlElements,     getUndoManager()),
           androidVersionCode                   (settings, Ids::androidVersionCode,                   getUndoManager(), "1"),
           androidCompileSDK                    (settings, Ids::androidCompileSDK,                    getUndoManager(), "19"),
@@ -885,6 +886,10 @@ private:
                    "specified, that base class should be a sub-class of android.app.Activity. When empty, Activity "
                    "(android.app.Activity) will be used as the base class. "
                    "Use this if you would like to use your own Android Activity base class.");
+
+        props.add (new TextPropertyComponent (androidApplicationClass, "Android Application class", 256, false),
+                   "If not empty, specifies the class to use as the Android Application sub-class. This can be "
+                   "useful for maintaining global application state and will be instantiated before any other class.");
 
         props.add (new TextPropertyComponent (androidVersionCode, "Android Version Code", 32, false),
                    "An integer value that represents the version of the application code, relative to other versions.");
@@ -1762,6 +1767,9 @@ private:
     {
         auto* app = getOrCreateChildWithName (manifest, "application");
         setAttributeIfNotPresent (*app, "android:label", "@string/app_name");
+
+        if (androidApplicationClass.get().toString().trim() != String::empty)
+            app->setAttribute ("android:application", androidApplicationClass.get().toString());
 
         if (androidTheme.get().toString().isNotEmpty())
             setAttributeIfNotPresent (*app, "android:theme", androidTheme.get());

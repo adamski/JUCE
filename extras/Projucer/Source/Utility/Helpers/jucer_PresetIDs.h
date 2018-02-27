@@ -186,6 +186,7 @@ namespace Ids
     DECLARE_ID (androidActivityClass);
     DECLARE_ID (androidActivitySubClassName);
     DECLARE_ID (androidActivityBaseClassName);
+    DECLARE_ID (androidApplicationClass);
     DECLARE_ID (androidVersionCode);
     DECLARE_ID (androidSDKPath);
     DECLARE_ID (androidNDKPath);
