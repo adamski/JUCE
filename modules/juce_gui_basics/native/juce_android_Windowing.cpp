@@ -238,9 +238,13 @@ public:
     {
         // NB: must not put this in the initialiser list, as it invokes a callback,
         // which will fail if the peer is only half-constructed.
+
+
         view = GlobalRef (android.bridge.callObjectMethod (JuceBridge.createNewView,
-                                                             (jboolean) component.isOpaque(),
-                                                             (jlong) this));
+                                                            (jboolean) component.isOpaque(),
+                                                            (jlong) this,
+                                                            (jstring) javaString(component.getName()),
+                                                            (jobject) activityContext)); // TODO store context in Thread
 
         if (isFocused())
             handleFocusGain();
@@ -783,7 +787,7 @@ AndroidComponentPeer* AndroidComponentPeer::frontWindow = nullptr;
 
 //==============================================================================
 #define JUCE_VIEW_CALLBACK(returnType, javaMethodName, params, juceMethodInvocation) \
-  JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_ACTIVITY_CLASSNAME, _00024ComponentPeerView), javaMethodName, returnType, params) \
+  JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_BRIDGE_CLASSNAME, _00024ComponentPeerView), javaMethodName, returnType, params) \
   { \
       setEnv (env); \
       if (AndroidComponentPeer* peer = (AndroidComponentPeer*) (pointer_sized_uint) host) \
@@ -1036,8 +1040,6 @@ static jint getAndroidOrientationFlag (int orientations) noexcept
 
 void Desktop::allowedOrientationsChanged()
 {
-    //auto activity = GlobalRef (android.bridge.callObjectMethod (JuceBridge.getActivity));
-
     auto* env = getEnv();
     auto activity = LocalRef<jobject> (android.bridge.callObjectMethod (JuceBridge.getActivity));
     auto activityClass = LocalRef<jclass> (env->GetObjectClass (activity));

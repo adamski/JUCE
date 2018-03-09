@@ -591,9 +591,14 @@ MainAppWindow::MainAppWindow()
                       LookAndFeel::getDefaultLookAndFeel().findColour (ResizableWindow::backgroundColourId),
                       DocumentWindow::allButtons)
 {
+    DBG ("MainAppWindow ctor");
     setUsingNativeTitleBar (true);
+    DBG ("setUsingNativeTitleBar");
     setResizable (true, false);
+    DBG ("setResizable");
     setResizeLimits (400, 400, 10000, 10000);
+    DBG ("setResizeLimits");
+
 
    #if JUCE_IOS || JUCE_ANDROID
     setFullScreen (true);

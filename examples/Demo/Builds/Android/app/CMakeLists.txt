@@ -8,7 +8,7 @@ SET(BINARY_NAME "juce_jni")
 add_library("cpufeatures" STATIC "${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c")
 set_source_files_properties("${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c" PROPERTIES COMPILE_FLAGS "-Wno-sign-conversion -Wno-gnu-statement-expression")
 
-add_definitions("-DJUCE_ANDROID=1" "-DJUCE_ANDROID_API_VERSION=10" "-DJUCE_ANDROID_ACTIVITY_CLASSNAME=com_roli_jucedemo_JuceDemo" "-DJUCE_ANDROID_ACTIVITY_CLASSPATH=\"com/roli/jucedemo/JuceDemo\"" "-DJUCE_ANDROID_SHARING_CONTENT_PROVIDER_CLASSNAME=com_roli_jucedemo_SharingContentProvider" "-DJUCE_ANDROID_SHARING_CONTENT_PROVIDER_CLASSPATH=\"com/roli/jucedemo/SharingContentProvider\"" "-DJUCE_PUSH_NOTIFICATIONS=1" "-DJUCE_UNIT_TESTS=1" "-DJUCER_ANDROIDSTUDIO_7F0E4A25=1" "-DJUCE_APP_VERSION=3.0.0" "-DJUCE_APP_VERSION_HEX=0x30000")
+add_definitions("-DJUCE_ANDROID=1" "-DJUCE_ANDROID_API_VERSION=10" "-DJUCE_ANDROID_ACTIVITY_CLASSNAME=com_roli_jucedemo_JuceDemo" "-DJUCE_ANDROID_ACTIVITY_CLASSPATH=\"com/roli/jucedemo/JuceDemo\"" "-DJUCE_ANDROID_BRIDGE_CLASSNAME=com_juce_JuceBridge" "-DJUCE_ANDROID_BRIDGE_CLASSPATH=\"com/juce/JuceBridge\"" "-DJUCE_ANDROID_SHARING_CONTENT_PROVIDER_CLASSNAME=com_roli_jucedemo_SharingContentProvider" "-DJUCE_ANDROID_SHARING_CONTENT_PROVIDER_CLASSPATH=\"com/roli/jucedemo/SharingContentProvider\"" "-DJUCE_PUSH_NOTIFICATIONS=1" "-DJUCE_UNIT_TESTS=1" "-DJUCER_ANDROIDSTUDIO_7F0E4A25=1" "-DJUCE_APP_VERSION=3.0.0" "-DJUCE_APP_VERSION_HEX=0x30000")
 
 include_directories( AFTER
     "../../../JuceLibraryCode"
@@ -1377,9 +1377,11 @@ add_library( ${BINARY_NAME}
     "../../../../../modules/juce_video/capture/juce_CameraDevice.h"
     "../../../../../modules/juce_video/native/juce_android_CameraDevice.h"
     "../../../../../modules/juce_video/native/juce_mac_CameraDevice.h"
+    "../../../../../modules/juce_video/native/juce_mac_MovieComponent.mm"
     "../../../../../modules/juce_video/native/juce_mac_Video.h"
     "../../../../../modules/juce_video/native/juce_win32_CameraDevice.h"
     "../../../../../modules/juce_video/native/juce_win32_Video.h"
+    "../../../../../modules/juce_video/playback/juce_MovieComponent.h"
     "../../../../../modules/juce_video/playback/juce_VideoComponent.cpp"
     "../../../../../modules/juce_video/playback/juce_VideoComponent.h"
     "../../../../../modules/juce_video/juce_video.cpp"
@@ -2711,9 +2713,11 @@ set_source_files_properties("../../../../../modules/juce_video/capture/juce_Came
 set_source_files_properties("../../../../../modules/juce_video/capture/juce_CameraDevice.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_video/native/juce_android_CameraDevice.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_video/native/juce_mac_CameraDevice.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_video/native/juce_mac_MovieComponent.mm" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_video/native/juce_mac_Video.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_video/native/juce_win32_CameraDevice.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_video/native/juce_win32_Video.h" PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties("../../../../../modules/juce_video/playback/juce_MovieComponent.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_video/playback/juce_VideoComponent.cpp" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_video/playback/juce_VideoComponent.h" PROPERTIES HEADER_FILE_ONLY TRUE)
 set_source_files_properties("../../../../../modules/juce_video/juce_video.cpp" PROPERTIES HEADER_FILE_ONLY TRUE)

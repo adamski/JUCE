@@ -189,13 +189,13 @@ void juce_dispatchDelete (JNIEnv* env, jlong thisPtr)
     delete reinterpret_cast<AndroidInterfaceImplementer*> (thisPtr);
 }
 
-JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_ACTIVITY_CLASSNAME, _00024NativeInvocationHandler), dispatchInvoke,
+JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_BRIDGE_CLASSNAME, _00024NativeInvocationHandler), dispatchInvoke,
                    jobject, (JNIEnv* env, jobject /*object*/, jlong thisPtr, jobject proxy, jobject method, jobjectArray args))
 {
     return juce_invokeImplementer (env, thisPtr, proxy, method, args);
 }
 
-JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_ACTIVITY_CLASSNAME, _00024NativeInvocationHandler), dispatchFinalize,
+JUCE_JNI_CALLBACK (JUCE_JOIN_MACRO (JUCE_ANDROID_BRIDGE_CLASSNAME, _00024NativeInvocationHandler), dispatchFinalize,
                    void, (JNIEnv* env, jobject /*object*/, jlong thisPtr))
 {
     juce_dispatchDelete (env, thisPtr);
@@ -209,7 +209,7 @@ class JniEnvThreadHolder
 public:
     static JniEnvThreadHolder& getInstance() noexcept
     {
-        // You cann only use JNI functions AFTER JNI_OnLoad was called
+        // You can only use JNI functions AFTER JNI_OnLoad was called
         jassert (androidJNIJavaVM != nullptr);
 
         try

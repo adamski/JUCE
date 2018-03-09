@@ -44,8 +44,10 @@ public:
 
         Desktop::getInstance().setOrientationsEnabled (Desktop::allOrientations);
 
+        DBG ("setOrientationsEnabled");
         // Do your application's initialisation code here..
         mainWindow = new MainAppWindow();
+        DBG ("MainAppWindow ctor");
     }
 
     void shutdown() override

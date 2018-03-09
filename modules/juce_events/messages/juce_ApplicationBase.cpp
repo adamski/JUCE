@@ -293,13 +293,17 @@ bool JUCEApplicationBase::initialiseApp()
     }
    #endif
 
+        DBG ("initialiseApp");
     // let the app do its setting-up..
     initialise (getCommandLineParameters());
 
+        DBG ("initialise (getCommandLineParameters()");
     stillInitialising = false;
 
     if (MessageManager::getInstance()->hasStopMessageBeenSent())
         return false;
+
+        DBG ("hasStopMessageBeenSent");
 
    #if JUCE_HANDLE_MULTIPLE_INSTANCES
     if (auto* mih = multipleInstanceHandler.get())

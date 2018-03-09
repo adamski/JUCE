@@ -2413,6 +2413,9 @@
     <ClCompile Include="..\..\..\..\modules\juce_video\capture\juce_CameraDevice.cpp">
       <Filter>JUCE Modules\juce_video\capture</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\modules\juce_video\native\juce_mac_MovieComponent.mm">
+      <Filter>JUCE Modules\juce_video\native</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\..\modules\juce_video\playback\juce_VideoComponent.cpp">
       <Filter>JUCE Modules\juce_video\playback</Filter>
     </ClCompile>
@@ -4472,6 +4475,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_video\native\juce_win32_Video.h">
       <Filter>JUCE Modules\juce_video\native</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\modules\juce_video\playback\juce_MovieComponent.h">
+      <Filter>JUCE Modules\juce_video\playback</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\modules\juce_video\playback\juce_VideoComponent.h">
       <Filter>JUCE Modules\juce_video\playback</Filter>

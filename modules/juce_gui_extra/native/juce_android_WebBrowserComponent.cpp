@@ -62,16 +62,16 @@ DECLARE_JNI_CLASS (AndroidCookieManager, "android/webkit/CookieManager");
 #undef JNI_CLASS_MEMBERS
 
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
-  METHOD (constructor, "<init>",      "(L" JUCE_ANDROID_ACTIVITY_CLASSPATH ";J)V")
+  METHOD (constructor, "<init>",      "(L" JUCE_ANDROID_BRIDGE_CLASSPATH ";J)V")
 
-DECLARE_JNI_CLASS (JuceWebChromeClient, JUCE_ANDROID_ACTIVITY_CLASSPATH "$JuceWebChromeClient");
+DECLARE_JNI_CLASS (JuceWebChromeClient, JUCE_ANDROID_BRIDGE_CLASSPATH "$JuceWebChromeClient");
 #undef JNI_CLASS_MEMBERS
 
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
-  METHOD (constructor, "<init>",      "(L" JUCE_ANDROID_ACTIVITY_CLASSPATH ";J)V") \
+  METHOD (constructor, "<init>",      "(L" JUCE_ANDROID_BRIDGE_CLASSPATH ";J)V") \
   METHOD (hostDeleted, "hostDeleted", "()V")
 
-DECLARE_JNI_CLASS (JuceWebViewClient, JUCE_ANDROID_ACTIVITY_CLASSPATH "$JuceWebViewClient");
+DECLARE_JNI_CLASS (JuceWebViewClient, JUCE_ANDROID_BRIDGE_CLASSPATH "$JuceWebViewClient");
 #undef JNI_CLASS_MEMBERS
 
 #define JNI_CLASS_MEMBERS(METHOD, STATICMETHOD, FIELD, STATICFIELD) \
@@ -104,8 +104,10 @@ public:
         : owner (o)
     {
         auto* env = getEnv();
+        auto activity = LocalRef<jobject> (android.bridge.callObjectMethod (JuceBridge.getActivity));
+//        auto activityClass = LocalRef<jclass> (env->GetObjectClass (activity));
 
-        setView (env->NewObject (AndroidWebView, AndroidWebView.constructor, android.activity.get()));
+        setView (env->NewObject (AndroidWebView, AndroidWebView.constructor, activity.get()));
 
         auto settings = LocalRef<jobject> (env->CallObjectMethod ((jobject) getView(), AndroidWebView.getSettings));
         env->CallVoidMethod (settings, WebSettings.setJavaScriptEnabled, true);
@@ -114,12 +116,12 @@ public:
         env->CallVoidMethod (settings, WebSettings.setSupportMultipleWindows, true);
 
         juceWebChromeClient = GlobalRef (LocalRef<jobject> (env->NewObject (JuceWebChromeClient, JuceWebChromeClient.constructor,
-                                                                            android.activity.get(),
+                                                                            activity.get(),
                                                                             reinterpret_cast<jlong>(&owner))));
         env->CallVoidMethod ((jobject) getView(), AndroidWebView.setWebChromeClient, juceWebChromeClient.get());
 
         juceWebViewClient = GlobalRef (LocalRef<jobject> (env->NewObject (JuceWebViewClient, JuceWebViewClient.constructor,
-                                                                          android.activity.get(),
+                                                                          activity.get(),
                                                                           reinterpret_cast<jlong>(&owner))));
         env->CallVoidMethod ((jobject) getView(), AndroidWebView.setWebViewClient, juceWebViewClient.get());
     }
@@ -496,7 +498,7 @@ void WebBrowserComponent::clearCookies()
     auto cookieManager = LocalRef<jobject> (env->CallStaticObjectMethod (AndroidCookieManager,
                                                                          AndroidCookieManager.getInstance));
 
-    const bool apiAtLeast21 = env->CallStaticIntMethod (JuceAppActivity, JuceAppActivity.getAndroidSDKVersion) >= 21;
+    const bool apiAtLeast21 = env->CallStaticIntMethod (JuceBridge, JuceBridge.getAndroidSDKVersion) >= 21;
 
     jmethodID clearCookiesMethod = 0;
 
@@ -512,7 +514,7 @@ void WebBrowserComponent::clearCookies()
     }
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewPageLoadStarted, bool, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject url))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, webViewPageLoadStarted, bool, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject url))
 {
     setEnv (env);
 
@@ -525,14 +527,14 @@ bool juce_webViewPageLoadStarted (WebBrowserComponent* browserComponent, const S
     return browserComponent->browser->handlePageAboutToLoad (url);
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewPageLoadFinished, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject url))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, webViewPageLoadFinished, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject url))
 {
     setEnv (env);
 
     reinterpret_cast<WebBrowserComponent*> (host)->pageFinishedLoading (juceString (static_cast<jstring> (url)));
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewReceivedError, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject /*request*/, jobject error))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, webViewReceivedError, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject /*request*/, jobject error))
 {
     setEnv (env);
 
@@ -557,7 +559,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewReceivedError, void, 
     reinterpret_cast<WebBrowserComponent*> (host)->pageLoadHadNetworkError ({});
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewReceivedHttpError, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject /*request*/, jobject errorResponse))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, webViewReceivedHttpError, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject /*request*/, jobject errorResponse))
 {
     setEnv (env);
 
@@ -581,7 +583,7 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewReceivedHttpError, vo
     reinterpret_cast<WebBrowserComponent*> (host)->pageLoadHadNetworkError ({});
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewReceivedSslError, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject /*sslErrorHandler*/, jobject sslError))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, webViewReceivedSslError, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/, jobject /*sslErrorHandler*/, jobject sslError))
 {
     setEnv (env);
 
@@ -590,14 +592,14 @@ JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewReceivedSslError, voi
     reinterpret_cast<WebBrowserComponent*> (host)->pageLoadHadNetworkError (juceString (errorString));
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewCloseWindowRequest, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, webViewCloseWindowRequest, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/))
 {
     setEnv (env);
 
     reinterpret_cast<WebBrowserComponent*> (host)->windowCloseRequest();
 }
 
-JUCE_JNI_CALLBACK (JUCE_ANDROID_ACTIVITY_CLASSNAME, webViewCreateWindowRequest, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/))
+JUCE_JNI_CALLBACK (JUCE_ANDROID_BRIDGE_CLASSNAME, webViewCreateWindowRequest, void, (JNIEnv* env, jobject /*activity*/, jlong host, jobject /*webView*/))
 {
     setEnv (env);
 
