@@ -227,6 +227,7 @@ public:
         writeFile (targetFolder, "build.gradle",                             getProjectBuildGradleFileContent());
         writeFile (appFolder,    "build.gradle",                             getAppBuildGradleFileContent());
         writeFile (targetFolder, "local.properties",                         getLocalPropertiesFileContent());
+        writeFile (targetFolder, "gradle.properties",                        getGradlePropertiesFileContent());
         writeFile (targetFolder, "gradle/wrapper/gradle-wrapper.properties", getGradleWrapperPropertiesFileContent());
 
         writeBinaryFile (targetFolder, "gradle/wrapper/LICENSE-for-gradlewrapper.txt", BinaryData::LICENSE,           BinaryData::LICENSESize);
@@ -707,6 +708,9 @@ private:
 
         if (! isLibrary())
             mo << "        applicationId \"" << bundleIdentifier << "\""          << newLine;
+        
+        mo << "        versionName appVersionName"                                 << newLine;
+        mo << "        versionCode appVersionCode as Integer"                       << newLine;
 
         mo << "        minSdkVersion    " << minSdkVersion                        << newLine;
         mo << "        targetSdkVersion " << targetSdkVersion                     << newLine;
@@ -839,6 +843,51 @@ private:
 
         return props;
     }
+                   
+    String getGradlePropertiesFileContent() const
+    {
+        auto targetFolder = getTargetFolder();
+        File file (File::addTrailingSeparator(targetFolder.getFullPathName()) + "gradle.properties");
+        
+        const String appVersionNameProp ("appVersionName=");
+        const String appVersionCodeProp ("appVersionCode=");
+        
+        bool appVersionNameSet = false;
+        bool appVersionCodeSet = false;
+        
+        StringArray properties;
+        
+        if (file.existsAsFile())
+        {
+            file.readLines (properties);
+            for (auto& line : properties)
+            {
+                if (line.startsWith (appVersionNameProp))
+                {
+                    line = appVersionNameProp + project.getVersionString();
+                    appVersionNameSet = true;
+                }
+                else if (line.startsWith (appVersionCodeProp))
+                {
+                    line = appVersionCodeProp + androidVersionCode.get().toString();
+                    appVersionCodeSet = true;
+                }
+            }
+        }
+        
+        MemoryOutputStream mo;
+        
+        for (auto& p : properties)
+            mo << p << newLine;
+        
+        if (! appVersionNameSet)
+            mo << appVersionNameProp << project.getVersionString() << newLine;
+        if (! appVersionCodeSet)
+            mo << appVersionCodeProp << androidVersionCode.get().toString() << newLine;
+        
+        return mo.toString();
+   }
+    
 
     String getGradleWrapperPropertiesFileContent() const
     {
@@ -1699,8 +1748,6 @@ private:
             manifest = new XmlElement ("manifest");
 
         setAttributeIfNotPresent (*manifest, "xmlns:android", "http://schemas.android.com/apk/res/android");
-        setAttributeIfNotPresent (*manifest, "android:versionCode", androidVersionCode.get());
-        setAttributeIfNotPresent (*manifest, "android:versionName",  project.getVersionString());
         setAttributeIfNotPresent (*manifest, "package", getActivityClassPackage());
 
         return manifest;
