@@ -243,8 +243,7 @@ public:
         view = GlobalRef (android.bridge.callObjectMethod (JuceBridge.createNewView,
                                                             (jboolean) component.isOpaque(),
                                                             (jlong) this,
-                                                            (jstring) javaString(component.getName()),
-                                                            (jobject) activityContext)); // TODO store context in Thread
+                                                            (jstring) javaString(component.getName())));
 
         if (isFocused())
             handleFocusGain();
