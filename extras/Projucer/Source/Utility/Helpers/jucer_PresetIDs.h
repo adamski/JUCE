@@ -181,6 +181,8 @@ namespace Ids
     DECLARE_ID (androidJavaLibs);
     DECLARE_ID (androidRepositories);
     DECLARE_ID (androidDependencies);
+    DECLARE_ID (androidExtraDefaultConfig);
+    DECLARE_ID (androidExtraGradleSettings);
     DECLARE_ID (androidAdditionalXmlValueResources);
     DECLARE_ID (androidAdditionalRawValueResources);
     DECLARE_ID (androidActivityClass);

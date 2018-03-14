@@ -105,8 +105,8 @@ public:
                      androidActivitySubClassName, androidActivityBaseClassName, androidManifestCustomXmlElements, androidVersionCode,
                      androidMinimumSDK, androidTargetSDK, androidCompileSDK, androidTheme, androidSharedLibraries, androidStaticLibraries,
                      androidExtraAssetsFolder, androidInternetNeeded, androidMicNeeded, androidBluetoothNeeded, androidExternalReadPermission,
-                     androidExternalWritePermission, androidInAppBillingPermission, androidVibratePermission, androidOtherPermissions, androidRemoteRepositories,
-                     androidEnableRemoteNotifications, androidRemoteNotificationsConfigFile, androidEnableContentSharing, androidKeyStore, gradleSettings,
+                     androidExternalWritePermission, androidInAppBillingPermission, androidVibratePermission, androidOtherPermissions, androidRemoteRepositories, androidExtraDefaultConfig,
+                     androidEnableRemoteNotifications, androidRemoteNotificationsConfigFile, androidEnableContentSharing, androidKeyStore, gradleSettings, androidExtraGradleSettings,
                      androidKeyStorePass, androidKeyAlias, androidKeyAliasPass, gradleVersion, gradleToolchain, androidPluginVersion, buildToolsVersion;
 
     //==============================================================================
@@ -114,8 +114,10 @@ public:
         : ProjectExporter (p, t),
           androidJavaLibs                      (settings, Ids::androidJavaLibs,                      getUndoManager()),
           androidRepositories                  (settings, Ids::androidRepositories,                  getUndoManager()),
+          androidExtraDefaultConfig            (settings, Ids::androidExtraDefaultConfig,            getUndoManager()),
           androidDependencies                  (settings, Ids::androidDependencies,                  getUndoManager()),
-          androidScreenOrientation             (settings, Ids::androidScreenOrientation,             getUndoManager(), "unspecified"),
+          androidExtraGradleSettings          (settings, Ids::androidExtraGradleSettings,                     getUndoManager()),
+    androidScreenOrientation             (settings, Ids::androidScreenOrientation,             getUndoManager(), "unspecified"),
           androidActivityClass                 (settings, Ids::androidActivityClass,                 getUndoManager(), createDefaultClassName()),
           androidActivitySubClassName          (settings, Ids::androidActivitySubClassName,          getUndoManager()),
           androidActivityBaseClassName         (settings, Ids::androidActivityBaseClassName,         getUndoManager(), "Activity"),
@@ -620,6 +622,7 @@ private:
         mo << getAndroidBuildTypes()                                                         << newLine;
         mo << getAndroidProductFlavours()                                                    << newLine;
         mo << getAndroidVariantFilter()                                                      << newLine;
+        mo << getAndroidExtraGradleSettings()                                               << newLine;
 
         mo << getAndroidRepositories()                                                       << newLine;
         mo << getAndroidDependencies()                                                       << newLine;
@@ -714,6 +717,9 @@ private:
 
         mo << "        minSdkVersion    " << minSdkVersion                        << newLine;
         mo << "        targetSdkVersion " << targetSdkVersion                     << newLine;
+        
+        for (auto& d : StringArray::fromLines (androidExtraDefaultConfig.get().toString()))
+            mo << "        " << d << newLine;
 
         mo << "        externalNativeBuild {"                                     << newLine;
         mo << "            cmake {"                                               << newLine;
@@ -782,6 +788,18 @@ private:
 
         mo << "    }" << newLine;
 
+        return mo.toString();
+    }
+    
+    String getAndroidExtraGradleSettings() const
+    {
+        MemoryOutputStream mo;
+        
+        auto settings = StringArray::fromLines (androidExtraGradleSettings.get().toString());
+        
+        for (auto& line : settings)
+            mo << "    " << line << newLine;
+        
         return mo.toString();
     }
 
@@ -917,6 +935,14 @@ private:
                    "Module dependencies (one per line). These will be added to module-level gradle file \"dependencies\" section. "
                    "If adding any java libs in \"Java libraries to include\" setting, do not add them here as "
                    "they will be added automatically.");
+        
+        props.add (new TextPropertyComponent (androidExtraDefaultConfig, "Extra gradle default config settings", 8192, true),
+                   "Additional gradle default configuration settings (one per line). "
+                   "These will be added to the project-level gradle file's \"defaultConfig\" section");
+        
+        props.add (new TextPropertyComponent (androidExtraGradleSettings, "Extra gradle android settings", 8192, true),
+                   "Additional gradle android settings (one per line). "
+                   "These will be added to the project-level gradle file's \"android\" section");
 
         props.add (new ChoicePropertyComponent (androidScreenOrientation, "Screen orientation",
                                                 { "Portrait and Landscape", "Portrait", "Landscape" },
