@@ -315,7 +315,7 @@ public class JuceBridge
 	Method requestPermissionsMethod = null;
 	try
 	{
-	    requestPermissionsMethod = ((Activity) activityContext).getClass().getMethod ("requestPermissions",
+	    requestPermissionsMethod = activityContext.getClass().getMethod ("requestPermissions",
 		    String[].class, int.class);
 	}
 	catch (SecurityException e)     { return; }
@@ -960,9 +960,9 @@ public class JuceBridge
     //==============================================================================
     public static class NativeInvocationHandler implements InvocationHandler
     {
-        public NativeInvocationHandler (Activity activityToUse, long nativeContextRef)
+        public NativeInvocationHandler (Context contextToUse, long nativeContextRef)
         {
-            activity = activityToUse;
+            context = contextToUse;
             nativeContext = nativeContextRef;
         }
 
@@ -974,7 +974,10 @@ public class JuceBridge
         @Override
         public void finalize()
         {
-            activity.runOnUiThread (new Runnable()
+           if (nativeContext != 0)
+                dispatchFinalize (nativeContext);
+            /*
+                activity.runOnUiThread (new Runnable()
                                     {
                                         @Override
                                         public void run()
@@ -983,6 +986,7 @@ public class JuceBridge
                                                 dispatchFinalize (nativeContext);
                                         }
                                     });
+            */
         }
 
         @Override
@@ -992,7 +996,7 @@ public class JuceBridge
         }
 
         //==============================================================================
-        Activity activity;
+        Context context;
         private long nativeContext = 0;
 
         private native void dispatchFinalize (long nativeContextRef);
@@ -1001,7 +1005,7 @@ public class JuceBridge
 
     public InvocationHandler createInvocationHandler (long nativeContextRef)
     {
-        return new NativeInvocationHandler (((Activity) activityContext), nativeContextRef);
+        return new NativeInvocationHandler (activityContext, nativeContextRef);
     }
 
     public void invocationHandlerContextDeleted (InvocationHandler handler)

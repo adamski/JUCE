@@ -583,7 +583,7 @@ public:
     SingleMediaScanner (const String& filename)
         : msc (getEnv()->NewObject (MediaScannerConnection,
                                     MediaScannerConnection.constructor,
-                                    android.bridge.get(),
+                                    android.bridge.callObjectMethod(JuceBridge.getActivityContext),
                                     CreateJavaInterface (this, "android/media/MediaScannerConnection$MediaScannerConnectionClient").get())),
           file (filename)
     {

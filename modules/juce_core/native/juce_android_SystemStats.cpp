@@ -134,18 +134,49 @@ LocalRef<jobject> CreateJavaInterface (AndroidInterfaceImplementer* implementer,
         }
     }
 
-    auto invocationHandler = LocalRef<jobject> (env->CallObjectMethod (android.bridge,
-                                                                       JuceBridge.createInvocationHandler,
-                                                                       reinterpret_cast<jlong> (implementer)));
+//    // Check if activityContext is an activity
+//
+//    auto context = LocalRef<jobject> (android.bridge.callObjectMethod (JuceBridge.getActivityContext));
+//    auto contextClass = LocalRef<jclass> (env->GetObjectClass (context));
+//
+//
+//    // First get the class object
+//    jmethodID mid = env->GetMethodID(contextClass, "getClass", "()Ljava/lang/Class;");
+//    auto clsObj = LocalRef<jobject> (env->CallObjectMethod(context, mid));
+//
+//// Now get the class object's class descriptor
+//    auto cls = LocalRef<jclass> (env->GetObjectClass(clsObj));
+//
+//// Find the getName() method on the class object
+//        mid = env->GetMethodID(cls, "getName", "()Ljava/lang/String;");
+//
+//// Call the getName() to get a jstring object back
+//        jstring strObj = (jstring)env->CallObjectMethod(clsObj, mid);
+//
+//// Now get the c string from the java jstring object
+//        const char* str = env->GetStringUTFChars(strObj, NULL);
+//
+//// Print the class name
+//        DBG("\nCalling class is: " << str);
+//
+//// Release the memory pinned char array
+//        env->ReleaseStringUTFChars(strObj, str);
 
-    // CreateJavaInterface() is expected to be called just once for a given implementer
-    jassert (implementer->invocationHandler == nullptr);
+    //if (str == "Activity") {
 
-    implementer->invocationHandler = GlobalRef (invocationHandler);
+        auto invocationHandler = LocalRef<jobject>(env->CallObjectMethod(android.bridge,
+                                                                         JuceBridge.createInvocationHandler,
+                                                                         reinterpret_cast<jlong> (implementer)));
 
-    return LocalRef<jobject> (env->CallStaticObjectMethod (JavaProxy, JavaProxy.newProxyInstance,
-                                                           classLoader.get(), classArray.get(),
-                                                           invocationHandler.get()));
+        // CreateJavaInterface() is expected to be called just once for a given implementer
+        jassert(implementer->invocationHandler == nullptr);
+
+        implementer->invocationHandler = GlobalRef(invocationHandler);
+
+        return LocalRef<jobject>(env->CallStaticObjectMethod(JavaProxy, JavaProxy.newProxyInstance,
+                                                             classLoader.get(), classArray.get(),
+                                                             invocationHandler.get()));
+    //}
 }
 
 LocalRef<jobject> CreateJavaInterface (AndroidInterfaceImplementer* implementer,
