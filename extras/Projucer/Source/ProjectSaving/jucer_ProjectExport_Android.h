@@ -938,11 +938,11 @@ private:
         
         props.add (new TextPropertyComponent (androidExtraDefaultConfig, "Extra gradle default config settings", 8192, true),
                    "Additional gradle default configuration settings (one per line). "
-                   "These will be added to the project-level gradle file's \"defaultConfig\" section");
+                   "These will be added to the module-level gradle file's \"defaultConfig\" section");
         
         props.add (new TextPropertyComponent (androidExtraGradleSettings, "Extra gradle android settings", 8192, true),
                    "Additional gradle android settings (one per line). "
-                   "These will be added to the project-level gradle file's \"android\" section");
+                   "These will be added to the module-level gradle file's \"android\" section");
 
         props.add (new ChoicePropertyComponent (androidScreenOrientation, "Screen orientation",
                                                 { "Portrait and Landscape", "Portrait", "Landscape" },
