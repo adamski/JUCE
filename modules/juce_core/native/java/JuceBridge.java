@@ -807,7 +807,7 @@ public class JuceBridge
 	    Method systemUIVisibilityMethod = null;
 	    try
 	    {
-		systemUIVisibilityMethod = ((Activity) activityContext).getClass().getMethod ("setSystemUiVisibility", int.class);
+		systemUIVisibilityMethod = activityContext.getClass().getMethod ("setSystemUiVisibility", int.class);
 	    }
 	    catch (SecurityException e)     { return; }
 	    catch (NoSuchMethodException e) { return; }
