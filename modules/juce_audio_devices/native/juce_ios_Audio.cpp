@@ -1194,6 +1194,18 @@ struct iOSAudioIODevice::Pimpl      : public AudioPlayHead,
                     for (AVAudioSessionChannelDescription* desc in port.channels)
                         result.add (nsStringToJuce (desc.channelName));
                 }
+                
+                JUCE_IOS_AUDIO_LOG ("Actual hardware channel names for " << (isInput ? "inputs" : "outputs")
+                                    << ": " << result.joinIntoString(", "));
+                
+                if (isInput && result.isEmpty())
+                {
+                    for (AVAudioSessionPortDescription* port in (route.outputs))
+                    {
+                        for (AVAudioSessionChannelDescription* desc in port.channels)
+                            result.add (nsStringToJuce (desc.channelName));
+                    }
+                }
 
                 // A fallback for the iOS simulator and older iOS versions
                 if (result.isEmpty())
