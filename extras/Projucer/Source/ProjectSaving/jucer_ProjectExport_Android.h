@@ -1607,7 +1607,7 @@ private:
         StringPairArray defines;
 
         defines.set ("JUCE_ANDROID", "1");
-        defines.set ("JUCE_ANDROID_API_VERSION", androidMinimumSDK.get());
+        defines.set ("JUCE_ANDROID_API_VERSION", androidCompileSDK.get());
         defines.set ("JUCE_ANDROID_ACTIVITY_CLASSNAME", getJNIActivityClassName().replaceCharacter ('/', '_'));
         defines.set ("JUCE_ANDROID_ACTIVITY_CLASSPATH", "\"" + getJNIActivityClassName() + "\"");
         defines.set ("JUCE_ANDROID_BRIDGE_CLASSNAME", getJNIJuceBridgeClassName().replaceCharacter ('/', '_'));

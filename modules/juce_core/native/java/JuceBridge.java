@@ -75,7 +75,7 @@ public class JuceBridge
     private JuceBridge()
     {
         componentPeerViewMap = new HashMap<String, ComponentPeerView>();
-        //permissionCallbackPtrMap = new HashMap<Integer, Long>();
+        permissionCallbackPtrMap = new HashMap<Integer, Long>();
     }
 
     public static JuceBridge getInstance()
