@@ -296,7 +296,7 @@ PopupMenu PluginListComponent::createOptionsMenu()
 
     for (auto format : formatManager.getFormats())
         if (format->canScanForPlugins())
-            menu.addItem (PopupMenu::Item ("Remove all " + format->getName() + " plug-ins")
+            menu.addItem (PopupMenu::Item ("Remove all " + format->getName() + " plugins")
                             .setEnabled (! list.getTypesForFormat (*format).isEmpty())
                             .setAction ([this, format]
                                         {
@@ -306,18 +306,18 @@ PopupMenu PluginListComponent::createOptionsMenu()
 
     menu.addSeparator();
 
-    menu.addItem (PopupMenu::Item (TRANS("Remove selected plug-in from list"))
+    menu.addItem (PopupMenu::Item (TRANS("Remove selected plugin from list"))
                     .setEnabled (table.getNumSelectedRows() > 0)
                     .setAction ([this] { removeSelectedPlugins(); }));
 
-    menu.addItem (PopupMenu::Item (TRANS("Remove any plug-ins whose files no longer exist"))
+    menu.addItem (PopupMenu::Item (TRANS("Remove any plugins whose files no longer exist"))
                     .setAction ([this] { removeMissingPlugins(); }));
 
     menu.addSeparator();
 
     auto selectedRow = table.getSelectedRow();
 
-    menu.addItem (PopupMenu::Item (TRANS("Show folder containing selected plug-in"))
+    menu.addItem (PopupMenu::Item (TRANS("Show folder containing selected plugin"))
                     .setEnabled (canShowFolderForPlugin (list, selectedRow))
                     .setAction ([this, selectedRow] { showFolderForPlugin (list, selectedRow); }));
 
@@ -325,7 +325,7 @@ PopupMenu PluginListComponent::createOptionsMenu()
 
     for (auto format : formatManager.getFormats())
         if (format->canScanForPlugins())
-            menu.addItem (PopupMenu::Item ("Scan for new or updated " + format->getName() + " plug-ins")
+            menu.addItem (PopupMenu::Item ("Scan for new or updated " + format->getName() + " plugins")
                             .setAction ([this, format]  { scanFor (*format); }));
 
     return menu;
@@ -337,10 +337,10 @@ PopupMenu PluginListComponent::createMenuForRow (int rowNumber)
 
     if (rowNumber >= 0 && rowNumber < tableModel->getNumRows())
     {
-        menu.addItem (PopupMenu::Item (TRANS("Remove plug-in from list"))
+        menu.addItem (PopupMenu::Item (TRANS("Remove plugin from list"))
                         .setAction ([this, rowNumber] { removePluginItem (rowNumber); }));
 
-        menu.addItem (PopupMenu::Item (TRANS("Show folder containing plug-in"))
+        menu.addItem (PopupMenu::Item (TRANS("Show folder containing plugin"))
                         .setEnabled (canShowFolderForPlugin (list, rowNumber))
                         .setAction ([this, rowNumber] { showFolderForPlugin (list, rowNumber); }));
     }
@@ -623,8 +623,8 @@ void PluginListComponent::scanFor (AudioPluginFormat& format)
 void PluginListComponent::scanFor (AudioPluginFormat& format, const StringArray& filesOrIdentifiersToScan)
 {
     currentScanner.reset (new Scanner (*this, format, filesOrIdentifiersToScan, propertiesToUse, allowAsync, numThreads,
-                                       dialogTitle.isNotEmpty() ? dialogTitle : TRANS("Scanning for plug-ins..."),
-                                       dialogText.isNotEmpty()  ? dialogText  : TRANS("Searching for all possible plug-in files...")));
+                                       dialogTitle.isNotEmpty() ? dialogTitle : TRANS("Scanning for plugins..."),
+                                       dialogText.isNotEmpty()  ? dialogText  : TRANS("Searching for all possible plugin files...")));
 }
 
 bool PluginListComponent::isScanning() const noexcept
