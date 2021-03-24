@@ -129,6 +129,17 @@ bool  JUCE_CALLTYPE SystemAudioVolume::setGain (float gain)   { return SystemVol
 bool  JUCE_CALLTYPE SystemAudioVolume::isMuted()              { return SystemVol (kAudioDevicePropertyMute).isMuted(); }
 bool  JUCE_CALLTYPE SystemAudioVolume::setMuted (bool mute)   { return SystemVol (kAudioDevicePropertyMute).setMuted (mute); }
 
+static double machToSeconds (UInt64 machTime)
+{
+    const int64_t kNanoPerS = 1000 * 1000 * 1000;
+    static mach_timebase_info_data_t s_timebase_info;
+    
+    if (s_timebase_info.denom == 0)
+        mach_timebase_info (&s_timebase_info);
+
+    return ((machTime * s_timebase_info.numer) / double (kNanoPerS * s_timebase_info.denom));
+}
+
 //==============================================================================
 struct CoreAudioClasses
 {
@@ -730,6 +741,15 @@ public:
     double getSampleRate() const  { return sampleRate; }
     int getBufferSize() const     { return bufferSize; }
 
+    void updateLatency (double now, double inputTimestamp, double outputTimestamp)
+    {
+        const auto inputLatencyTime = now - inputTimestamp;
+        const auto outputLatencyTime = outputTimestamp - now;
+        
+        inputLatency.store (roundToInt (inputLatencyTime * sampleRate), std::memory_order_relaxed);
+        outputLatency.store (roundToInt (outputLatencyTime * sampleRate), std::memory_order_relaxed);
+    }
+    
     void audioCallback (const AudioBufferList* inInputData,
                         AudioBufferList* outOutputData)
     {
@@ -808,8 +828,8 @@ public:
 
     //==============================================================================
     CoreAudioIODevice& owner;
-    int inputLatency  = 0;
-    int outputLatency = 0;
+    std::atomic<int> inputLatency { 0 };
+    std::atomic<int>  outputLatency { 0 };
     int bitDepth = 32;
     int xruns = 0;
     BigInteger activeInputChans, activeOutputChans;
@@ -836,14 +856,26 @@ private:
 
     //==============================================================================
     static OSStatus audioIOProc (AudioDeviceID /*inDevice*/,
-                                 const AudioTimeStamp* /*inNow*/,
+                                 const AudioTimeStamp* inNow,
                                  const AudioBufferList* inInputData,
-                                 const AudioTimeStamp* /*inInputTime*/,
+                                 const AudioTimeStamp* inInputTime,
                                  AudioBufferList* outOutputData,
-                                 const AudioTimeStamp* /*inOutputTime*/,
+                                 const AudioTimeStamp* inOutputTime,
                                  void* device)
     {
-        static_cast<CoreAudioInternal*> (device)->audioCallback (inInputData, outOutputData);
+        auto internal = static_cast<CoreAudioInternal*> (device);
+        
+        if (inNow->mFlags & kAudioTimeStampHostTimeValid
+            && inInputTime->mFlags & kAudioTimeStampHostTimeValid
+            && inOutputTime->mFlags & kAudioTimeStampHostTimeValid)
+        {
+            internal->updateLatency (machToSeconds (inNow->mHostTime),
+                                     machToSeconds (inInputTime->mHostTime),
+                                     machToSeconds (inOutputTime->mHostTime));
+        }
+        
+        internal->audioCallback (inInputData, outOutputData);
+        
         return noErr;
     }
 
