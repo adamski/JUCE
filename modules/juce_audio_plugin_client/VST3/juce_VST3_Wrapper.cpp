@@ -264,16 +264,33 @@ private:
 #endif
 
 //==============================================================================
+class ScopedThreadLocalBooleanSetter
+{
+public:
+    explicit ScopedThreadLocalBooleanSetter (ThreadLocalValue<bool>& ref)
+        : toSet (ref)
+    {
+        jassert (! toSet.get());
+        toSet = true;
+    }
+
+    ~ScopedThreadLocalBooleanSetter() noexcept { toSet = false; }
+
+private:
+    ThreadLocalValue<bool>& toSet;
+};
+
+//==============================================================================
 class JuceAudioProcessor   : public Vst::IUnitInfo
 {
 public:
-    JuceAudioProcessor (AudioProcessor* source) noexcept
-         : audioProcessor (source)
+    explicit JuceAudioProcessor (AudioProcessor* source) noexcept
+        : audioProcessor (source)
     {
         setupParameters();
     }
 
-    virtual ~JuceAudioProcessor() {}
+    virtual ~JuceAudioProcessor() = default;
 
     AudioProcessor* get() const noexcept      { return audioProcessor.get(); }
 
@@ -435,14 +452,29 @@ public:
         return unitID;
     }
 
-    int getNumParameters() const noexcept             { return vstParamIDs.size(); }
+    const Array<Vst::ParamID>& getParamIDs() const noexcept { return vstParamIDs; }
+    Vst::ParamID getBypassParamID()          const noexcept { return bypassParamID; }
+    Vst::ParamID getProgramParamID()         const noexcept { return programParamID; }
+    bool isBypassRegularParameter()          const noexcept { return bypassIsRegularParameter; }
+
+    void setParameterValue (size_t paramIndex, float value)
+    {
+        cachedParamValues.set (paramIndex, value);
+    }
+
+    template <typename Callback>
+    void forAllChangedParameters (Callback&& callback)
+    {
+        cachedParamValues.ifSet ([&] (size_t index, float value)
+        {
+            callback (cachedParamValues.getParamID (index), value);
+        });
+    }
+
     bool isUsingManagedParameters() const noexcept    { return juceParameters.isUsingManagedParameters(); }
 
     //==============================================================================
     static const FUID iid;
-    Array<Vst::ParamID> vstParamIDs;
-    Vst::ParamID bypassParamID = 0, programParamID = static_cast<Vst::ParamID> (paramPreset);
-    bool bypassIsRegularParameter = false;
 
 private:
     //==============================================================================
@@ -540,6 +572,8 @@ private:
             vstParamIDs.add (programParamID);
             paramMap.set (static_cast<int32> (programParamID), ownedProgramParameter.get());
         }
+
+        cachedParamValues = CachedParamValues { { vstParamIDs.begin(), vstParamIDs.end() } };
     }
 
     Vst::ParamID generateVSTParamIDForParam (AudioProcessorParameter* param)
@@ -559,6 +593,12 @@ private:
         return paramHash;
       #endif
     }
+
+    //==============================================================================
+    Array<Vst::ParamID> vstParamIDs;
+    CachedParamValues cachedParamValues;
+    Vst::ParamID bypassParamID = 0, programParamID = static_cast<Vst::ParamID> (paramPreset);
+    bool bypassIsRegularParameter = false;
 
     //==============================================================================
     std::atomic<int> refCount { 0 };
@@ -692,8 +732,6 @@ public:
             valueNormalized = info.defaultNormalizedValue;
         }
 
-        virtual ~Param() override = default;
-
         bool updateParameterInfo()
         {
             auto updateParamIfChanged = [] (Vst::String128& paramToUpdate, const String& newValue)
@@ -729,7 +767,7 @@ public:
 
                     param.setValue (value);
 
-                    inParameterChangedCallback = true;
+                    ScopedThreadLocalBooleanSetter scope { inParameterChangedCallback };
                     param.sendValueChangedMessageToListeners (value);
                 }
 
@@ -891,14 +929,17 @@ public:
     //==============================================================================
     tresult PLUGIN_API setComponentState (IBStream* stream) override
     {
+        // As an IEditController member, the host should only call this from the message thread.
+        JUCE_ASSERT_MESSAGE_THREAD
+
         if (auto* pluginInstance = getPluginInstance())
         {
-            for (auto vstParamId : audioProcessor->vstParamIDs)
+            for (auto vstParamId : audioProcessor->getParamIDs())
             {
                 auto paramValue = [&]
                 {
-                    if (vstParamId == audioProcessor->programParamID)
-                        return EditController::plainParamToNormalized (audioProcessor->programParamID,
+                    if (vstParamId == audioProcessor->getProgramParamID())
+                        return EditController::plainParamToNormalized (audioProcessor->getProgramParamID(),
                                                                        pluginInstance->getCurrentProgram());
 
                     return (double) audioProcessor->getParamForVSTParamID (vstParamId)->getValue();
@@ -1126,26 +1167,49 @@ public:
     }
 
     //==============================================================================
-    void paramChanged (Vst::ParamID vstParamId, double newValue)
+    void beginGesture (Vst::ParamID vstParamId)
+    {
+        if (MessageManager::getInstance()->isThisTheMessageThread())
+            beginEdit (vstParamId);
+    }
+
+    void endGesture (Vst::ParamID vstParamId)
+    {
+        if (MessageManager::getInstance()->isThisTheMessageThread())
+            endEdit (vstParamId);
+    }
+
+    void paramChanged (int parameterIndex, Vst::ParamID vstParamId, double newValue)
     {
         if (inParameterChangedCallback.get())
-        {
-            inParameterChangedCallback = false;
             return;
-        }
 
-        // NB: Cubase has problems if performEdit is called without setParamNormalized
-        EditController::setParamNormalized (vstParamId, newValue);
-        performEdit (vstParamId, newValue);
+        if (MessageManager::getInstance()->isThisTheMessageThread())
+        {
+            // NB: Cubase has problems if performEdit is called without setParamNormalized
+            EditController::setParamNormalized (vstParamId, newValue);
+            performEdit (vstParamId, newValue);
+        }
+        else
+        {
+            audioProcessor->setParameterValue ((size_t) parameterIndex, (float) newValue);
+        }
     }
 
     //==============================================================================
-    void audioProcessorParameterChangeGestureBegin (AudioProcessor*, int index) override        { beginEdit (audioProcessor->getVSTParamIDForIndex (index)); }
-    void audioProcessorParameterChangeGestureEnd (AudioProcessor*, int index) override          { endEdit (audioProcessor->getVSTParamIDForIndex (index)); }
+    void audioProcessorParameterChangeGestureBegin (AudioProcessor*, int index) override
+    {
+        beginGesture (audioProcessor->getVSTParamIDForIndex (index));
+    }
+
+    void audioProcessorParameterChangeGestureEnd (AudioProcessor*, int index) override
+    {
+        endGesture (audioProcessor->getVSTParamIDForIndex (index));
+    }
 
     void audioProcessorParameterChanged (AudioProcessor*, int index, float newValue) override
     {
-        paramChanged (audioProcessor->getVSTParamIDForIndex (index), newValue);
+        paramChanged (index, audioProcessor->getVSTParamIDForIndex (index), newValue);
     }
 
     void audioProcessorChanged (AudioProcessor*, const ChangeDetails& details) override
@@ -1162,20 +1226,26 @@ public:
 
         if (auto* pluginInstance = getPluginInstance())
         {
-            if (details.programChanged && audioProcessor->getProgramParameter() != nullptr)
+            if (details.programChanged)
             {
-                auto currentProgram = pluginInstance->getCurrentProgram();
-                auto paramValue = roundToInt (EditController::normalizedParamToPlain (audioProcessor->programParamID,
-                                                                                      EditController::getParamNormalized (audioProcessor->programParamID)));
-
-                if (currentProgram != paramValue)
+                if (auto* programParameter = audioProcessor->getProgramParameter())
                 {
-                    beginEdit (audioProcessor->programParamID);
-                    paramChanged (audioProcessor->programParamID,
-                                  EditController::plainParamToNormalized (audioProcessor->programParamID, currentProgram));
-                    endEdit (audioProcessor->programParamID);
+                    const auto programParameterIndex = programParameter->getParameterIndex();
+                    const auto programParameterId = audioProcessor->getProgramParamID();
+                    const auto currentProgram = pluginInstance->getCurrentProgram();
+                    const auto paramValue = roundToInt (EditController::normalizedParamToPlain (programParameterId,
+                                                                                                EditController::getParamNormalized (programParameterId)));
 
-                    flags |= Vst::kParamValuesChanged;
+                    if (currentProgram != paramValue)
+                    {
+                        beginGesture (programParameterId);
+                        paramChanged (programParameterIndex,
+                                      programParameterId,
+                                      EditController::plainParamToNormalized (programParameterId, currentProgram));
+                        endGesture (programParameterId);
+
+                        flags |= Vst::kParamValuesChanged;
+                    }
                 }
             }
 
@@ -1188,8 +1258,8 @@ public:
             }
         }
 
-        if (flags != 0 && componentHandler != nullptr && ! inSetupProcessing)
-            componentHandler->restartComponent (flags);
+        if (! inSetupProcessing)
+            componentRestarter.restart (flags);
     }
 
     //==============================================================================
@@ -1206,12 +1276,50 @@ private:
     friend struct Param;
 
     //==============================================================================
+    class ComponentRestarter : private AsyncUpdater
+    {
+    public:
+        explicit ComponentRestarter (JuceVST3EditController& controllerIn)
+            : controller (controllerIn) {}
+
+        ~ComponentRestarter() noexcept override
+        {
+            cancelPendingUpdate();
+        }
+
+        void restart (int32 newFlags)
+        {
+            if (newFlags == 0)
+                return;
+
+            flags = newFlags;
+
+            if (MessageManager::getInstance()->isThisTheMessageThread())
+                handleAsyncUpdate();
+            else
+                triggerAsyncUpdate();
+        }
+
+    private:
+        void handleAsyncUpdate() override
+        {
+            if (auto* handler = controller.componentHandler)
+                handler->restartComponent (flags);
+        }
+
+        JuceVST3EditController& controller;
+        int32 flags = 0;
+    };
+
+    //==============================================================================
     VSTComSmartPtr<JuceAudioProcessor> audioProcessor;
 
     struct MidiController
     {
         int channel = -1, ctrlNumber = -1;
     };
+
+    ComponentRestarter componentRestarter { *this };
 
     enum { numMIDIChannels = 16 };
     Vst::ParamID parameterToMidiControllerOffset;
@@ -1230,17 +1338,17 @@ private:
             juceParameter.addListener (this);
         }
 
-        void parameterValueChanged (int, float newValue) override
+        void parameterValueChanged (int index, float newValue) override
         {
-            owner.paramChanged (vstParamID, newValue);
+            owner.paramChanged (index, vstParamID, newValue);
         }
 
         void parameterGestureChanged (int, bool gestureIsStarting) override
         {
             if (gestureIsStarting)
-                owner.beginEdit (vstParamID);
+                owner.beginGesture (vstParamID);
             else
-                owner.endEdit (vstParamID);
+                owner.endGesture (vstParamID);
         }
 
         JuceVST3EditController& owner;
@@ -1266,20 +1374,20 @@ private:
             pluginInstance->addListener (this);
 
             // as the bypass is not part of the regular parameters we need to listen for it explicitly
-            if (! audioProcessor->bypassIsRegularParameter)
+            if (! audioProcessor->isBypassRegularParameter())
                 ownedParameterListeners.push_back (std::make_unique<OwnedParameterListener> (*this,
                                                                                              *audioProcessor->getBypassParameter(),
-                                                                                             audioProcessor->bypassParamID));
+                                                                                             audioProcessor->getBypassParamID()));
 
             if (parameters.getParameterCount() <= 0)
             {
-                auto n = audioProcessor->getNumParameters();
+                auto n = audioProcessor->getParamIDs().size();
 
                 for (int i = 0; i < n; ++i)
                 {
                     auto vstParamID = audioProcessor->getVSTParamIDForIndex (i);
 
-                    if (vstParamID == audioProcessor->programParamID)
+                    if (vstParamID == audioProcessor->getProgramParamID())
                         continue;
 
                     auto* juceParam = audioProcessor->getParamForVSTParamID (vstParamID);
@@ -1287,16 +1395,16 @@ private:
                     auto unitID = JuceAudioProcessor::getUnitID (parameterGroup);
 
                     parameters.addParameter (new Param (*this, *juceParam, vstParamID, unitID,
-                                                        (vstParamID == audioProcessor->bypassParamID)));
+                                                        (vstParamID == audioProcessor->getBypassParamID())));
                 }
 
                 if (auto* programParam = audioProcessor->getProgramParameter())
                 {
                     ownedParameterListeners.push_back (std::make_unique<OwnedParameterListener> (*this,
                                                                                                  *programParam,
-                                                                                                 audioProcessor->programParamID));
+                                                                                                 audioProcessor->getProgramParamID()));
 
-                    parameters.addParameter (new ProgramChangeParameter (*pluginInstance, audioProcessor->programParamID));
+                    parameters.addParameter (new ProgramChangeParameter (*pluginInstance, audioProcessor->getProgramParamID()));
                 }
             }
 
@@ -2118,7 +2226,7 @@ public:
             auto floatValue = (shouldBeBypassed ? 1.0f : 0.0f);
             bypassParam->setValue (floatValue);
 
-            inParameterChangedCallback = true;
+            ScopedThreadLocalBooleanSetter scope { inParameterChangedCallback };
             bypassParam->sendValueChangedMessageToListeners (floatValue);
         }
     }
@@ -2824,7 +2932,7 @@ public:
                         {
                             param->setValue (floatValue);
 
-                            inParameterChangedCallback = true;
+                            ScopedThreadLocalBooleanSetter scope { inParameterChangedCallback };
                             param->sendValueChangedMessageToListeners (floatValue);
                         }
                     }
@@ -3099,6 +3207,20 @@ private:
             */
             jassert (midiBuffer.getNumEvents() <= numMidiEventsComingIn);
            #endif
+        }
+
+        if (auto* changes = data.outputParameterChanges)
+        {
+            comPluginInstance->forAllChangedParameters ([&] (Vst::ParamID paramID, float value)
+            {
+                Steinberg::int32 queueIndex = 0;
+
+                if (auto* queue = changes->addParameterData (paramID, queueIndex))
+                {
+                    Steinberg::int32 pointIndex = 0;
+                    queue->addPoint (0, value, pointIndex);
+                }
+            });
         }
     }
 
