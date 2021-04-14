@@ -55,7 +55,7 @@ public:
 
         PropertiesFile::Options options;
 
-        options.applicationName     = getApplicationName();
+        options.applicationName     = File::createLegalFileName (getApplicationName());
         options.filenameSuffix      = ".settings";
         options.osxLibrarySubFolder = "Application Support";
        #if JUCE_LINUX || JUCE_BSD
