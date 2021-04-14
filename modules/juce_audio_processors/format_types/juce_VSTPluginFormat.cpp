@@ -2911,6 +2911,11 @@ public:
             if (safeThis != nullptr)
                 componentMovedOrResized (true, true);
         });
+        Timer::callAfterDelay (250, [this, safeThis]
+        {
+            if (safeThis != nullptr)
+                componentMovedOrResized (true, true);
+        });
        #else
         componentMovedOrResized (true, true);
        #endif
