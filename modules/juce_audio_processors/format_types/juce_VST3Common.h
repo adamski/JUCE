@@ -974,6 +974,12 @@ public:
         }
     }
 
+    void clear()
+    {
+        for (size_t flagIndex = 0; flagIndex < flags.size(); ++flagIndex)
+            flags[flagIndex].exchange (0, std::memory_order_acq_rel);
+    }
+
 private:
     static constexpr size_t numFlagBits = 8 * sizeof (FlagType);
 
@@ -1010,6 +1016,11 @@ public:
 
     template <typename Callback>
     void ifSet (Callback&& callback) { floatCache.ifSet (std::forward<Callback> (callback)); }
+
+    void clear()
+    {
+        floatCache.clear();
+    }
 
 private:
     std::vector<Steinberg::Vst::ParamID> paramIds;
