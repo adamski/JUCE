@@ -942,9 +942,9 @@ public:
     void set (size_t index, float value)
     {
         jassert (index < size());
-        values[index].store (value, std::memory_order_relaxed);
-        flags[index / numFlagBits].fetch_or ((FlagType) 1 << (index % numFlagBits),
-                                             std::memory_order_acq_rel);
+        const auto previous = values[index].exchange (value, std::memory_order_relaxed);
+        const auto bit = previous == value ? 0 : (FlagType) 1 << (index % numFlagBits);
+        flags[index / numFlagBits].fetch_or (bit, std::memory_order_acq_rel);
     }
 
     float get (size_t index) const noexcept
@@ -972,12 +972,6 @@ public:
                 }
             }
         }
-    }
-
-    void clear()
-    {
-        for (size_t flagIndex = 0; flagIndex < flags.size(); ++flagIndex)
-            flags[flagIndex].exchange (0, std::memory_order_acq_rel);
     }
 
 private:
@@ -1016,11 +1010,6 @@ public:
 
     template <typename Callback>
     void ifSet (Callback&& callback) { floatCache.ifSet (std::forward<Callback> (callback)); }
-
-    void clear()
-    {
-        floatCache.clear();
-    }
 
 private:
     std::vector<Steinberg::Vst::ParamID> paramIds;

@@ -2838,7 +2838,6 @@ public:
             auto* vst3Param = static_cast<VST3Parameter*> (parameter);
             vst3Param->setValueFromEditor ((float) editController->getParamNormalized (vst3Param->getParamID()));
         }
-        cachedParamValues.clear();
     }
 
     bool setStateFromPresetFile (const MemoryBlock& rawData)
