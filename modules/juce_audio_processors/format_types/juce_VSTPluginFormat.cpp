@@ -2777,7 +2777,7 @@ public:
         else
         #endif
         {
-            cocoaWrapper.reset (new AutoResizingNSViewComponentWithParent());
+            cocoaWrapper.reset (new NSViewComponentWithParent (plugin));
             addAndMakeVisible (cocoaWrapper.get());
         }
        #endif
@@ -2825,7 +2825,7 @@ public:
         if (cocoaWrapper != nullptr)
         {
             if (isVisible())
-                openPluginWindow ((NSView*)cocoaWrapper->getView());
+                openPluginWindow ((NSView*) cocoaWrapper->getView());
             else
                 closePluginWindow();
         }
@@ -3401,7 +3401,7 @@ private:
       std::unique_ptr<CarbonWrapperComponent> carbonWrapper;
      #endif
 
-      std::unique_ptr<AutoResizingNSViewComponentWithParent> cocoaWrapper;
+      std::unique_ptr<NSViewComponentWithParent> cocoaWrapper;
 
       void resized() override
       {
