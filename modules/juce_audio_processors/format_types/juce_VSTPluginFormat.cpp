@@ -2958,10 +2958,10 @@ public:
             if (safeThis != nullptr)
                 safeThis->componentMovedOrResized (true, true);
         });
-        Timer::callAfterDelay (250, [this, safeThis]
+        Timer::callAfterDelay (250, [this, safeThis = SafePointer<VSTPluginWindow> { this }]
         {
             if (safeThis != nullptr)
-                componentMovedOrResized (true, true);
+                safeThis->componentMovedOrResized (true, true);
         });
        #else
         componentMovedOrResized (true, true);
